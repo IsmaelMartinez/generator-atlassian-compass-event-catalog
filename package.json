@@ -1,0 +1,35 @@
+{
+  "name": "@eventcatalog/generator-template",
+  "version": "0.0.2",
+  "description": "Scaffold a new Event Catalog generator",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest",
+    "format": "prettier --write .",
+    "format:diff": "prettier --list-different ."
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.16.1",
+    "prettier": "^3.3.3",
+    "tsup": "^8.1.0",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.2"
+  },
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@eventcatalog/sdk": "^0.0.12",
+    "chalk": "^4"
+  }
+}
