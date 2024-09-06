@@ -11,7 +11,20 @@ const eventCatalogConfig = {
 
 let catalogDir: string;
 
-describe('MyPlugin test', () => {
+const expectedMarkdown = `## Architecture diagram
+
+<NodeGraph />
+
+## Links
+
+ * [Atlassian Compass Component](https://compass.atlassian.com/00000000-0000-0000-0000-000000000000)
+ * [Atlassian Compass Team](https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000)
+ * [My Jira project](https://www.example.com/projects/myproject)
+ * [null](https://www.example.com/resources/)
+ * [Service dashboard](https://www.example.com/dashboards/service-dashboard)
+ * [Service repository](https://www.example.com/repos/my-service-repo)`;
+
+describe('Atlassian Compass generator tests', () => {
 
   beforeEach(() => {
     catalogDir = join(__dirname, 'catalog') || '';
@@ -22,28 +35,42 @@ describe('MyPlugin test', () => {
     await fs.rm(join(catalogDir), { recursive: true });
   });
 
-  it('creates a test event in the catalog', async () => {
-    const { getEvent } = utils(catalogDir);
-    await plugin(eventCatalogConfig, {});
+  it('creates a test service in the catalog for the domain', async () => {
+    const { getService, getDomain } = utils(catalogDir);
+    await plugin(eventCatalogConfig, {
+      "path": join(__dirname, 'my-service-compass.yml'),
+      "compassUrl": "https://compass.atlassian.com",
+      "domain": {
+        "id": "my-domain",
+        "name": "My Domain",
+        "version": "0.0.1"
+      }
+    });
 
-    const event = await getEvent('my-event');
-    expect(event).toBeDefined();
+    //Validate the domain is created
+    const domain = await getDomain('my-domain', '0.0.1');
+    expect(domain).toBeDefined();
 
-    expect(event).toEqual({
-      "id": "my-event",
-      "name": "My Event",
-      "version": "1.0.0",
-      "summary": "This is my event",
-      "badges": [
-        {
-          "content": "Event",
-          "textColor": "blue",
-          "backgroundColor": "blue"
-        }
-      ],
-      "markdown": "This is my event"
-    })
+    expect(domain).toEqual({
+      "id": "my-domain",
+      "markdown": `## Architecture diagram
+  <NodeGraph />`,
+      "name": "My Domain",
+      "version": "0.0.1",
+      "services": [{"id": "my-service", "version": "1"}],
+    });
 
+    //Check that the service is created
+    const service = await getService('my-service');
+    expect(service).toBeDefined();
+
+    expect(service).toEqual({
+      "id": "my-service",
+      "markdown": expectedMarkdown,
+      "name": "my-service",
+      "summary": "This is a sample component in Compass.",
+      "version": "1",
+    });
   });
 
 });

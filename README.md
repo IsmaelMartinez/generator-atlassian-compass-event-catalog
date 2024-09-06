@@ -1,52 +1,28 @@
-# EventCatalog Generator Template
+# Atlassian Compass EventCatalog Generator
 
-Starter project to create your own [generators](https://www.eventcatalog.dev/docs/development/plugins/generators) for EventCatalog.
+This generator can be used to create services in Event Catalog from an Atlassian Compass file.
 
-## Developing your own plugin
+# Getting started
 
-### 1. Clone this repo
+## Installation and configuration
 
-```
-git clone git@github.com:event-catalog/generator-template.git
-```
+_Make sure you are on the latest version of EventCatalog_.
 
-### 2. Install depencies
+1. Install the package
 
 ```sh
-# using pnpm
-pnpm i
-
-# using npm
-npm i
+npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
 ```
 
-### 3. Link the project
-
-Link the project so it can be used in your EventCatalog.
-
-```sh
-# default package name is @eventcatalog/generator-template, this will linked
-npm link
-```
-
-### 4. Using the package in your EventCatalog
-
-Navigate to your EventCatalog directory, then link the package.
-
-```sh
-# default name, this may have changed you renamed your package
-npm link @eventcatalog/generator-template
-```
-
-### 5. Configure your EventCatalog to use your generator
+2. Configure your EventCatalog to use your generator 
 
 Edit your `eventcatalog.config.js` file and add the generator
 
-```js
+```json
 ...
 generators: [
     [
-        "@eventcatalog/generator-template", 
+        "@ismaelmartinez/generator-atlassian-compass-event-catalog", 
         // These are options to give your generator
         {
             debug: true,
@@ -56,35 +32,33 @@ generators: [
 ...
 ```
 
+[(See full event catalog example)](examples/eventcatalog.config.js)
 
-### 6. Compile and watch your plugin
+3. Run the generate command
 
-In your plugin directory run:
+On your EventCatalog project, run the generate command:
 
 ```sh
-# Just build the plugin once
-pnpm run build
-
-# Watch changes (recommended for dev)
-pnpm run build -- -- watch
-```
-
-### 7. Run your generator
-
-In your EventCatalog directory run:
-
-```
 npm run generate
 ```
 
-This will run your generator code and interact with your Catalog.
+4. See your new domains, services and messages, run
 
-You can now add your custom code to your generator to test against your catalog.
+```sh
+npm run dev
+```
 
-You can use the [EventCatalog SDK](https://www.eventcatalog.dev/docs/sdk) to get utils to read, write and delete files in your Catalog easier.
 
----
+## Features
 
-### Contributing back to EventCatalog eco-system
+Currently, the generator only supports generating services from an Atlassian Compass file.
 
-Building a plugin? We would love to add it[ our integrations](https://www.eventcatalog.dev/integrations) and/or GitHub org. If this is something you are interested in you can reach out on [Discord](https://discord.gg/3rjaZMmrAm) or create an issue in this project.
+## Found a problem?
+
+Raise a GitHub issue on this project, or contact us on [our Discord server](https://discord.gg/3rjaZMmrAm).
+
+## License
+
+// TODO - Add license information
+
+## Contributing
