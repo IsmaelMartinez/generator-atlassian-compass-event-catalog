@@ -32,15 +32,8 @@ export default {
     [
       '@ismaelmartinez/generator-atlassian-compass',
       {
-        path: [path.join(__dirname, 'examples', 'my-service-compass.yml')],
-        domain: { id: 'orders', name: 'Orders', version: '0.0.1' },
-      },
-    ],
-    [
-      '@eventcatalogtest/generator-asyncapi',
-      {
-        path: [path.join(__dirname, 'asyncapi-files', 'payment-service.yml'), path.join(__dirname, 'asyncapi-files', 'fraud-detection-service.yml')],
-        domain: { id: 'payment', name: 'Payment', version: '0.0.1' },
+        path: [path.join(__dirname, 'examples', 'my-service-compass.yml'), path.join(__dirname, 'examples', 'my-other-compass.notsupported.yml')],
+        domain: { id: 'orders', name: 'Compass', version: '0.0.1' },
       },
     ],
   ],

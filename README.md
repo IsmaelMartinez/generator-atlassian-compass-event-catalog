@@ -25,12 +25,19 @@ generators: [
         "@ismaelmartinez/generator-atlassian-compass-event-catalog", 
         // These are options to give your generator
         {
-            debug: true,
+            path: ["path/to/your/compass/file"],
+            compassUrl: "https://your.atlassian.compass.url",
+            domain: { id: 'orders', name: 'Compass', version: '0.0.1' }, //Optional
         }
+        // Repeat for each domain
     ]
 ]
 ...
 ```
+
+If a domain is provided, the services will be added to it. If the domain does not exist, it will be created.
+
+Domain and services support versioning.
 
 [(See full event catalog example)](examples/eventcatalog.config.js)
 
@@ -48,7 +55,6 @@ npm run generate
 npm run dev
 ```
 
-
 ## Features
 
 Currently, the generator only supports generating services from an Atlassian Compass file.
@@ -59,6 +65,6 @@ Raise a GitHub issue on this project, or contact us on [our Discord server](http
 
 ## License
 
-// TODO - Add license information
+See [LICENSE](LICENSE).
 
 ## Contributing

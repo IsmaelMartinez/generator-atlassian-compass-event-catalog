@@ -1,12 +1,5 @@
 import { CompassConfig } from './compass';
-
-export type Service = {
-    id: string
-    name: string
-    version: string
-    summary: string
-    markdown: string
-}
+import { Service } from './types';
 
 export const defaultMarkdown = (config: CompassConfig, compassComponentUrl?: string, compassTeamUrl?: string) => {
     return `
@@ -19,30 +12,10 @@ export const defaultMarkdown = (config: CompassConfig, compassComponentUrl?: str
 
 ${compassComponentUrl ? ` * [Atlassian Compass Component](${compassComponentUrl})` : ''}
 ${compassTeamUrl ? ` * [Atlassian Compass Team](${compassTeamUrl})` : ''}
-${config.links?.map(link => ` * [${link.name}](${link.url})`).join("\n")}
+${config.links?.filter(link => link.name).map(link => ` * [${link.name}](${link.url})`).join("\n")}
 `;
 
-//   typeId?: TypeId
-//   fields?: Field
-//   relationships?: {
-//       DEPENDS_ON?: string[]
-//   }
-//   customFields?: CustomField[]
-//   labels?: string[]
-  // ## Relationships
-  // ${compass.config.relationships?.DEPENDS_ON?.map(dependency => `* ${dependency}`).join("\n")}
-  // ## Labels
-  // ${compass.config.labels?.map(label => `* ${label}`).join("\n")}
-  // ## Lifecycle
-  // ${compass.config.fields?.lifecycle}
-  // ## Tier
-  // ${compass.config.fields?.tier}
-  // ## Type
-  // ${compass.config.typeId}
-  // ## Custom Fields
-  // ${compass.config.customFields?.map(customField => `* ${customField.name}: ${customField.value}`).join("\n")}
-
-  };
+};
 
 const getComponentUrl = (compassUrl: string, config: CompassConfig) => {
     const parts = config?.id?.split("/")
@@ -69,7 +42,7 @@ export function loadService(config: CompassConfig, compassUrl: string): Service 
     return  {
         id: config.name,
         name: config.name,
-        version: '1',
+        version: config.configVersion.toString(),
         summary: config.description || "",
         markdown: markdownTemplate 
     }
