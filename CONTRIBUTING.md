@@ -1,6 +1,6 @@
 # Contributing
 
-We welcome contributions to this project. 
+We welcome contributions to this project.
 
 ## Getting started
 
@@ -16,6 +16,7 @@ git clone git@github.com:ismaelmartinez/generator-compass-event-catalog.git
 ```sh
 pnpm install
 ```
+
 1. Run your tests
 
 ```sh
@@ -41,11 +42,7 @@ npm link @ismaelmartinez/generator-atlassian-compass-event-catalog
 1. Compile and watch your plugin
 
 ```sh
-# Just build the plugin once
 pnpm run build
-
-# Watch changes (recommended for dev)
-pnpm run build -- -- watch
 ```
 
 1. Run the generator
@@ -61,5 +58,3 @@ This will run your generator code and interact with your Catalog.
 You can now add your custom code to your generator to test against your catalog.
 
 You can use the [EventCatalog SDK](https://www.eventcatalog.dev/docs/sdk) to get utils to read, write and delete files in your Catalog easier.
-
-

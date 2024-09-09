@@ -19,28 +19,25 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
   console.debug(chalk.green('processing config', JSON.stringify(config)));
   console.log('options', options);
   const compassFiles = Array.isArray(options.path) ? options.path : [options.path];
-  
+
   // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
-  const { 
-    getService,
-    writeService,
-   } = utils(projectDir);
+  const { getService, writeService } = utils(projectDir);
 
   let domain = null;
 
   if (options.domain) {
-    domain = new Domain(options.domain.id, options.domain.name, options.domain.version, projectDir); 
+    domain = new Domain(options.domain.id, options.domain.name, options.domain.version, projectDir);
     await domain.processDomain();
   }
 
   for (const path of compassFiles) {
     const compassConfig: CompassConfig = loadConfig(path);
-    
+
     if (compassConfig.typeId !== 'SERVICE') {
       throw new Error('Only SERVICE type is supported');
     }
 
-    if (domain){
+    if (domain) {
       // Add the service to the domain
       await domain.addServiceToDomain(compassConfig);
     }

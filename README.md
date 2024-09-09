@@ -14,7 +14,7 @@ _Make sure you are on the latest version of EventCatalog_.
 npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
 ```
 
-2. Configure your EventCatalog to use your generator 
+2. Configure your EventCatalog to use your generator
 
 Edit your `eventcatalog.config.js` file and add the generator
 
@@ -22,7 +22,7 @@ Edit your `eventcatalog.config.js` file and add the generator
 ...
 generators: [
     [
-        "@ismaelmartinez/generator-atlassian-compass-event-catalog", 
+        "@ismaelmartinez/generator-atlassian-compass-event-catalog",
         // These are options to give your generator
         {
             path: ["path/to/your/compass/file"],

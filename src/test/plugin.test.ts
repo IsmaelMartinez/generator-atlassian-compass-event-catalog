@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 
 // Fake eventcatalog config
 const eventCatalogConfig = {
-  title: "My EventCatalog"
+  title: 'My EventCatalog',
 };
 
 let catalogDir: string;
@@ -24,7 +24,6 @@ const expectedMarkdown = `## Architecture diagram
  * [Service repository](https://www.example.com/repos/my-service-repo)`;
 
 describe('Atlassian Compass generator tests', () => {
-
   beforeEach(() => {
     catalogDir = join(__dirname, 'catalog') || '';
     process.env.PROJECT_DIR = catalogDir;
@@ -34,18 +33,17 @@ describe('Atlassian Compass generator tests', () => {
     await fs.rm(join(catalogDir), { recursive: true });
   });
 
-  
   it('creates a test service in the catalog for the domain', async () => {
     const { getService, getDomain } = utils(catalogDir);
     // Create the domain and service
     await plugin(eventCatalogConfig, {
-      "path": join(__dirname, 'my-service-compass.yml'),
-      "compassUrl": "https://compass.atlassian.com",
-      "domain": {
-        "id": "my-domain",
-        "name": "My Domain",
-        "version": "0.0.1"
-      }
+      path: join(__dirname, 'my-service-compass.yml'),
+      compassUrl: 'https://compass.atlassian.com',
+      domain: {
+        id: 'my-domain',
+        name: 'My Domain',
+        version: '0.0.1',
+      },
     });
 
     // Validate the domain is created
@@ -53,12 +51,12 @@ describe('Atlassian Compass generator tests', () => {
     expect(domain).toBeDefined();
 
     expect(domain).toEqual({
-      "id": "my-domain",
-      "markdown": `## Architecture diagram
+      id: 'my-domain',
+      markdown: `## Architecture diagram
   <NodeGraph />`,
-      "name": "My Domain",
-      "version": "0.0.1",
-      "services": [{"id": "my-service", "version": "1"}],
+      name: 'My Domain',
+      version: '0.0.1',
+      services: [{ id: 'my-service', version: '1' }],
     });
 
     // Check that the service is created
@@ -66,37 +64,37 @@ describe('Atlassian Compass generator tests', () => {
     expect(service).toBeDefined();
 
     expect(service).toEqual({
-      "id": "my-service",
-      "markdown": expectedMarkdown,
-      "name": "my-service",
-      "summary": "This is a sample component in Compass.",
-      "version": "1",
+      id: 'my-service',
+      markdown: expectedMarkdown,
+      name: 'my-service',
+      summary: 'This is a sample component in Compass.',
+      version: '1',
     });
   });
 
   it('updates a domain version, but services are still available', async () => {
     const { getService, getDomain } = utils(catalogDir);
-    
+
     // Create the domain and service
     await plugin(eventCatalogConfig, {
-      "path": join(__dirname, 'my-service-compass.yml'),
-      "compassUrl": "https://compass.atlassian.com",
-      "domain": {
-        "id": "my-domain",
-        "name": "My Domain",
-        "version": "0.0.1"
-      }
+      path: join(__dirname, 'my-service-compass.yml'),
+      compassUrl: 'https://compass.atlassian.com',
+      domain: {
+        id: 'my-domain',
+        name: 'My Domain',
+        version: '0.0.1',
+      },
     });
 
-    // Update the domain 
+    // Update the domain
     await plugin(eventCatalogConfig, {
-      "path": join(__dirname, 'my-service-compass.yml'),
-      "compassUrl": "https://compass.atlassian.com",
-      "domain": {
-        "id": "my-domain",
-        "name": "My Domain",
-        "version": "0.0.2"
-      }
+      path: join(__dirname, 'my-service-compass.yml'),
+      compassUrl: 'https://compass.atlassian.com',
+      domain: {
+        id: 'my-domain',
+        name: 'My Domain',
+        version: '0.0.2',
+      },
     });
 
     // Validate the domain is created
@@ -104,12 +102,12 @@ describe('Atlassian Compass generator tests', () => {
     expect(domain).toBeDefined();
 
     expect(domain).toEqual({
-      "id": "my-domain",
-      "markdown": `## Architecture diagram
+      id: 'my-domain',
+      markdown: `## Architecture diagram
   <NodeGraph />`,
-      "name": "My Domain",
-      "version": "0.0.1",
-      "services": [{"id": "my-service", "version": "1"}],
+      name: 'My Domain',
+      version: '0.0.1',
+      services: [{ id: 'my-service', version: '1' }],
     });
 
     // Validate the domain is updated
@@ -117,12 +115,12 @@ describe('Atlassian Compass generator tests', () => {
     expect(domain).toBeDefined();
 
     expect(domain).toEqual({
-      "id": "my-domain",
-      "markdown": `## Architecture diagram
+      id: 'my-domain',
+      markdown: `## Architecture diagram
   <NodeGraph />`,
-      "name": "My Domain",
-      "version": "0.0.2",
-      "services": [{"id": "my-service", "version": "1"}],
+      name: 'My Domain',
+      version: '0.0.2',
+      services: [{ id: 'my-service', version: '1' }],
     });
 
     // Check that the service is created
@@ -130,39 +128,39 @@ describe('Atlassian Compass generator tests', () => {
     expect(service).toBeDefined();
 
     expect(service).toEqual({
-      "id": "my-service",
-      "markdown": expectedMarkdown,
-      "name": "my-service",
-      "summary": "This is a sample component in Compass.",
-      "version": "1",
+      id: 'my-service',
+      markdown: expectedMarkdown,
+      name: 'my-service',
+      summary: 'This is a sample component in Compass.',
+      version: '1',
     });
   });
 
   it('does not create a service if the typeId is not SERVICE', async () => {
     const { getService, getDomain } = utils(catalogDir);
     // Create the domain and service
-    await expect(plugin(eventCatalogConfig, {
-      "path": join(__dirname, 'my-other-compass.notsupported.yml'),
-      "compassUrl": "https://compass.atlassian.com",
-      "domain": {
-        "id": "my-domain",
-        "name": "My Domain",
-        "version": "0.0.1"
-      }
-    }))
-    .rejects
-    .toThrow('Only SERVICE type is supported');
+    await expect(
+      plugin(eventCatalogConfig, {
+        path: join(__dirname, 'my-other-compass.notsupported.yml'),
+        compassUrl: 'https://compass.atlassian.com',
+        domain: {
+          id: 'my-domain',
+          name: 'My Domain',
+          version: '0.0.1',
+        },
+      })
+    ).rejects.toThrow('Only SERVICE type is supported');
 
     // Validate the domain is created
     const domain = await getDomain('my-domain', '0.0.1');
     expect(domain).toBeDefined();
 
     expect(domain).toEqual({
-      "id": "my-domain",
-      "markdown": `## Architecture diagram
+      id: 'my-domain',
+      markdown: `## Architecture diagram
   <NodeGraph />`,
-      "name": "My Domain",
-      "version": "0.0.1",
+      name: 'My Domain',
+      version: '0.0.1',
     });
 
     // Check that the service is not created
@@ -170,5 +168,4 @@ describe('Atlassian Compass generator tests', () => {
     const service = await getService('my-service');
     expect(service).not.toBeDefined();
   });
-
 });

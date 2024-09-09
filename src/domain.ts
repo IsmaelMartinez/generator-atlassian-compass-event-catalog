@@ -17,11 +17,7 @@ export default class Domain {
 
   async processDomain() {
     // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
-    const { 
-      getDomain,
-      writeDomain,
-      versionDomain,
-    } = utils(this.projectDir);
+    const { getDomain, writeDomain, versionDomain } = utils(this.projectDir);
 
     // Try and get the domain
     const domain = await getDomain(this.id, this.version || 'latest');
@@ -31,37 +27,38 @@ export default class Domain {
 
     // Found a domain, but the versions do not match
     if (currentDomain && currentDomain.version !== this.version) {
-        await versionDomain(this.id);
-        console.log(chalk.cyan(` - Versioned previous domain (v${currentDomain.version})`));
+      await versionDomain(this.id);
+      console.log(chalk.cyan(` - Versioned previous domain (v${currentDomain.version})`));
     }
 
     // Do we need to create a new domain?
     if (!domain || (domain && domain.version !== this.version)) {
-        await writeDomain({
-            id: this.id,
-            name: this.name,
-            version: this.version,
-            markdown: `## Architecture diagram
+      await writeDomain({
+        id: this.id,
+        name: this.name,
+        version: this.version,
+        markdown: `## Architecture diagram
   <NodeGraph />`,
-        });
-        console.log(chalk.cyan(` - Domain (v${this.version}) created`));
+      });
+      console.log(chalk.cyan(` - Domain (v${this.version}) created`));
     }
 
     if (currentDomain && currentDomain.version === this.version) {
-        console.log(chalk.yellow(` - Domain (v${this.version}) already exists, skipped creation...`));
+      console.log(chalk.yellow(` - Domain (v${this.version}) already exists, skipped creation...`));
     }
   }
 
   async addServiceToDomain(compassConfig: CompassConfig) {
-    const { 
-      addServiceToDomain,
-    } = utils(this.projectDir);
+    const { addServiceToDomain } = utils(this.projectDir);
 
-    await addServiceToDomain(this.id, 
+    await addServiceToDomain(
+      this.id,
       {
         id: compassConfig.name,
         version: compassConfig.configVersion.toString(),
-      }, this.version);
+      },
+      this.version
+    );
     console.log(chalk.green(`Service ${compassConfig.name} added to domain ${this.id}!`));
   }
 }
