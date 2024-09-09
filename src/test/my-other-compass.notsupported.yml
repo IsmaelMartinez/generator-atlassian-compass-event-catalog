@@ -1,0 +1,36 @@
+configVersion: 1
+name: my-other-component
+id: 'ari:cloud:compass:a0000000-b000-c000-d000-e00000000000:component/00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-000000000000'
+description: This is a sample component in Compass.
+ownerId: 'ari:cloud:teams::team/00000000-0000-0000-0000-000000000000'
+typeId: OTHER
+fields:
+  tier: 1
+  lifecycle: Active
+links:
+  - name: My Jira project
+    type: PROJECT
+    url: 'https://www.example.com/projects/myproject'
+  - name: null
+    type: OTHER_LINK
+    url: 'https://www.example.com/resources/'
+  - name: Service dashboard
+    type: DASHBOARD
+    url: 'https://www.example.com/dashboards/service-dashboard'
+  - name: Service repository
+    type: REPOSITORY
+    url: 'https://www.example.com/repos/my-service-repo'
+labels:
+  - foo:bar
+  - baz
+customFields:
+  - name: platform
+    type: text
+    value: web
+  - name: reviewed
+    type: boolean
+    value: true
+relationships:
+  DEPENDS_ON:
+    - 'ari:cloud:compass:00000000-0000-0000-0000-000000000000:component/00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-00000000000'
+    - 'ari:cloud:compass:00000000-0000-0000-0000-000000000000:component/00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-00000000000'
