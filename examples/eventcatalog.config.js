@@ -33,8 +33,8 @@ export default {
       '@ismaelmartinez/generator-atlassian-compass',
       {
         path: [
-          path.join(__dirname, 'examples', 'my-service-compass.yml'),
-          path.join(__dirname, 'examples', 'my-other-compass.notsupported.yml'),
+          path.join(__dirname, 'src', 'test', 'my-service-compass.yml'),
+          path.join(__dirname, 'src', 'test', 'my-other-compass.notsupported.yml'),
         ],
         domain: { id: 'orders', name: 'Compass', version: '0.0.1' },
       },

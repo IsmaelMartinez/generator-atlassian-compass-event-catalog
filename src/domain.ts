@@ -55,10 +55,10 @@ export default class Domain {
       this.id,
       {
         id: compassConfig.name,
-        version: compassConfig.configVersion.toString(),
+        version: compassConfig.configVersion?.toString(),
       },
       this.version
     );
-    console.log(chalk.green(`Service ${compassConfig.name} added to domain ${this.id}!`));
+    console.log(chalk.cyan(` - Service ${compassConfig.name} added to domain ${this.id}!`));
   }
 }

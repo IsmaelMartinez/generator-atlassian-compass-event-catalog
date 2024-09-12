@@ -3,6 +3,7 @@ export type GeneratorProps = {
   path: string | string[];
   compassUrl: string;
   domain?: DomainOption;
+  debug?: boolean;
 };
 
 export type DomainOption = {

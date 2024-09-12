@@ -16,8 +16,10 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
     throw new Error('Please provide catalog url (env variable PROJECT_DIR)');
   }
 
-  console.debug(chalk.green('processing config', JSON.stringify(config)));
-  console.log('options', options);
+  if (options.debug) {
+    console.debug(chalk.magenta('Configuration provided', JSON.stringify(config)));
+    console.debug(chalk.magenta('Generator properties', JSON.stringify(options)));
+  }
   const compassFiles = Array.isArray(options.path) ? options.path : [options.path];
 
   // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
@@ -37,6 +39,8 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
       throw new Error('Only SERVICE type is supported');
     }
 
+    console.log(chalk.blue(`\nProcessing service: ${compassConfig.name}`));
+
     if (domain) {
       // Add the service to the domain
       await domain.addServiceToDomain(compassConfig);
@@ -45,9 +49,9 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
 
     if (!service) {
       await writeService(loadService(compassConfig, options.compassUrl.replace(/\/$/, '')));
-      console.log(chalk.green(`Service ${compassConfig.name} created!`));
+      console.log(chalk.cyan(` - Service ${compassConfig.name} created!`));
     } else {
-      console.log(chalk.yellow(`Service ${compassConfig.name} already exists!`));
+      console.log(chalk.yellow(` - Service ${compassConfig.name} already exists, skipped creation...`));
     }
   }
 };

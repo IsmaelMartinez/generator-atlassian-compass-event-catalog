@@ -18,7 +18,7 @@ npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
 
 Edit your `eventcatalog.config.js` file and add the generator
 
-```json
+```js
 ...
 generators: [
     [
@@ -28,6 +28,7 @@ generators: [
             path: ["path/to/your/compass/file"],
             compassUrl: "https://your.atlassian.compass.url",
             domain: { id: 'orders', name: 'Compass', version: '0.0.1' }, //Optional
+            debug: false //Optional
         }
         // Repeat for each domain
     ]
