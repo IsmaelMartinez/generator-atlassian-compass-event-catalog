@@ -26,8 +26,8 @@ generators: [
         // These are options to give your generator
         {
             services: [
-                { 
-                    path: ["path/to/your/compass/file"], 
+                {
+                    path: ["path/to/your/compass/file"],
                     version: "1.0.0" //Optional (defaults to 0.0.0)
                     id: "your-service-id" //Optional (defaults to the `name` in the compass file)
                 }, // Repeat for each service
@@ -65,6 +65,8 @@ npm run dev
 ## Features
 
 Currently, the generator only supports generating services from an Atlassian Compass file.
+
+By design, the links with name 'null' are ignored. This is to allow having the links to EventCatalog in the Compass file without having to worry to show the link in the EventCatalog Service page.
 
 ## Found a problem?
 

@@ -1,12 +1,13 @@
 name: generator-atlassian-compass-event-catalog
+id: 'ari:cloud:compass:ade7c59b-5f5c-4ee0-9349-00c893700b7c:component/a47222ae-5feb-436a-897b-110eda95d8f9/2e654a6c-83e9-4941-990e-622866721b8c'
 description: Event Catalog generator for Atlassian Compass files.
-typeId: SERVICE
 configVersion: 1
-ownerId: ari:cloud:identity::team/f58fb303-6322-419f-8c64-0cba6bdb3984
+typeId: SERVICE
+ownerId: 'ari:cloud:identity::team/f58fb303-6322-419f-8c64-0cba6bdb3984'
 fields:
   tier: 1
   lifecycle: Pre-release
-links: 
+links:
   - name: GitHub Repo
     type: REPOSITORY
     url: https://github.com/IsmaelMartinez/generator-atlassian-compass-event-catalog
@@ -17,8 +18,14 @@ links:
     type: CHAT_CHANNEL
     url: >-
       https://discord.com/channels/918092420338569216/1278989817304190999
-labels: 
+  - name: null
+    type: OTHER
+    url: 'https://this-link-does-not-show-in-event-catalog'
+relationships: {}
+labels:
   - 'generator'
   - 'source:github'
   - synced-with-jsm
 customFields: []
+# Learn more about formatting compass.yml:
+# https://go.atlassian.com/compass-yml-format
