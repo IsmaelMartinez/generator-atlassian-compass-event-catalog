@@ -66,6 +66,8 @@ npm run dev
 
 Currently, the generator only supports generating services from an Atlassian Compass file.
 
+By design, the links with name 'null' are ignored. This is to allow having the links to EventCatalog in the Compass file without having to worry to show the link in the EventCatalog Service page. 
+
 ## Found a problem?
 
 Raise a GitHub issue on this project, or contact us on [our Discord server](https://discord.gg/3rjaZMmrAm).
