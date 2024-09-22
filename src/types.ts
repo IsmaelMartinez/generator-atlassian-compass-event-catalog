@@ -1,8 +1,16 @@
+type ServiceOptions = {
+  id?: string;
+  path: string;
+  version?: string;
+};
+
 // Configuration the users give your catalog
 export type GeneratorProps = {
-  path: string | string[];
+  services: ServiceOptions[];
+  // path: string | string[];
   compassUrl: string;
   domain?: DomainOption;
+  debug?: boolean;
 };
 
 export type DomainOption = {

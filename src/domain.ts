@@ -48,17 +48,17 @@ export default class Domain {
     }
   }
 
-  async addServiceToDomain(compassConfig: CompassConfig) {
+  async addServiceToDomain(serviceId: string, serviceVersion: string = '0.0.0') {
     const { addServiceToDomain } = utils(this.projectDir);
 
     await addServiceToDomain(
       this.id,
       {
-        id: compassConfig.name,
-        version: compassConfig.configVersion.toString(),
+        id: serviceId,
+        version: serviceVersion,
       },
       this.version
     );
-    console.log(chalk.green(`Service ${compassConfig.name} added to domain ${this.id}!`));
+    console.log(chalk.cyan(` - Service ID ${serviceId} version ${serviceVersion} added to domain ${this.id}!`));
   }
 }

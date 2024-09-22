@@ -18,16 +18,23 @@ npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
 
 Edit your `eventcatalog.config.js` file and add the generator
 
-```json
+```js
 ...
 generators: [
     [
         "@ismaelmartinez/generator-atlassian-compass-event-catalog",
         // These are options to give your generator
         {
-            path: ["path/to/your/compass/file"],
+            services: [
+                { 
+                    path: ["path/to/your/compass/file"], 
+                    version: "1.0.0" //Optional (defaults to 0.0.0)
+                    id: "your-service-id" //Optional (defaults to the `name` in the compass file)
+                }, // Repeat for each service
+            ],
             compassUrl: "https://your.atlassian.compass.url",
-            domain: { id: 'orders', name: 'Compass', version: '0.0.1' }, //Optional
+            domain: { id: 'orders', name: 'Compass', version: '1.0.0' }, //Optional
+            debug: false //Optional
         }
         // Repeat for each domain
     ]
@@ -37,7 +44,7 @@ generators: [
 
 If a domain is provided, the services will be added to it. If the domain does not exist, it will be created.
 
-Domain and services support versioning.
+Domain support versioning, while services require versioning. As Atlassian Compass doesn't have the concept of versions, services version will default to 0.0.0. If you want to version your services, you can provide a version in the generator configuration.
 
 [(See full event catalog example)](examples/eventcatalog.config.js)
 
@@ -68,3 +75,5 @@ Raise a GitHub issue on this project, or contact us on [our Discord server](http
 See [LICENSE](LICENSE).
 
 ## Contributing
+
+See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.

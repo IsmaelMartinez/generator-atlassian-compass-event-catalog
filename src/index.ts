@@ -10,15 +10,19 @@ type EventCatalogConfig = any;
 
 export default async (config: EventCatalogConfig, options: GeneratorProps) => {
   // This is set by EventCatalog. This is the directory where the catalog is stored
+  console.log(chalk.green(`Processing ${options.services.length} Compass files...`));
+
   const projectDir = process.env.PROJECT_DIR;
 
   if (!projectDir) {
     throw new Error('Please provide catalog url (env variable PROJECT_DIR)');
   }
 
-  console.debug(chalk.green('processing config', JSON.stringify(config)));
-  console.log('options', options);
-  const compassFiles = Array.isArray(options.path) ? options.path : [options.path];
+  if (options.debug) {
+    console.debug(chalk.magenta('Configuration provided', JSON.stringify(config)));
+    console.debug(chalk.magenta('Generator properties', JSON.stringify(options)));
+  }
+  const compassFiles = Array.isArray(options.services) ? options.services : [options.services];
 
   // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
   const { getService, writeService } = utils(projectDir);
@@ -30,24 +34,33 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
     await domain.processDomain();
   }
 
-  for (const path of compassFiles) {
-    const compassConfig: CompassConfig = loadConfig(path);
+  for (const file of compassFiles) {
+    const compassConfig: CompassConfig = loadConfig(file.path);
 
     if (compassConfig.typeId !== 'SERVICE') {
       throw new Error('Only SERVICE type is supported');
     }
 
+    console.log(chalk.blue(`\nProcessing service: ${compassConfig.name}`));
+
     if (domain) {
       // Add the service to the domain
-      await domain.addServiceToDomain(compassConfig);
+      await domain.addServiceToDomain(file.id || compassConfig.name, file.version);
     }
-    const service = await getService(compassConfig.name);
+    const service = await getService(file.id || compassConfig.name);
 
     if (!service) {
-      await writeService(loadService(compassConfig, options.compassUrl.replace(/\/$/, '')));
-      console.log(chalk.green(`Service ${compassConfig.name} created!`));
+      const compassService = loadService(
+        compassConfig,
+        options.compassUrl.replace(/\/$/, ''),
+        file.version,
+        file.id
+      )
+      await writeService(compassService);
+      console.log(chalk.cyan(` - Service ${compassConfig.name} created!`));
     } else {
-      console.log(chalk.yellow(`Service ${compassConfig.name} already exists!`));
+      console.log(chalk.yellow(` - Service ${compassConfig.name} already exists, skipped creation...`));
     }
   }
+  console.log(chalk.green(`\nFinished generating event catalog for the Compass files provided!`));
 };
