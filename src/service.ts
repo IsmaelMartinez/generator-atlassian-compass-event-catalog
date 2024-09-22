@@ -4,18 +4,21 @@ import { Service } from './types';
 export const defaultMarkdown = (config: CompassConfig, compassComponentUrl?: string, compassTeamUrl?: string) => {
   return `
 
+## Links
+
+<Tiles>
+  ${compassComponentUrl ? `<Tile icon="RocketLaunchIcon" href="${compassComponentUrl}"  title="Compass Component" description="Open the Atlassian Compass Component in a new window" openWindow/>` : '' }
+  ${compassTeamUrl ? `<Tile icon="UserGroupIcon" href="${compassTeamUrl}"  title="Compass Team" description="Open Atlassian Compass Team in a new window" openWindow/>` : '' }
+${config.links
+  ?.filter((link) => link.name)
+  .map((link) => `<Tile href="${link.url}" openWindow title="${link.name}"/>` )
+  .join('\n')}
+</Tiles>
+
 ## Architecture diagram
 
 <NodeGraph />
 
-## Links
-
-${compassComponentUrl ? ` * [Atlassian Compass Component](${compassComponentUrl})` : ''}
-${compassTeamUrl ? ` * [Atlassian Compass Team](${compassTeamUrl})` : ''}
-${config.links
-  ?.filter((link) => link.name)
-  .map((link) => ` * [${link.name}](${link.url})`)
-  .join('\n')}
 `;
 };
 
@@ -35,13 +38,18 @@ const getTeamUrl = (compassUrl: string, config: CompassConfig) => {
   }
 };
 
-export function loadService(config: CompassConfig, compassUrl: string): Service {
+export function loadService(
+    config: CompassConfig, 
+    compassUrl: string, 
+    serviceVersion: string = '0.0.0',
+    serviceId: string = config.name,
+  ): Service {
   const markdownTemplate = defaultMarkdown(config, getComponentUrl(compassUrl, config), getTeamUrl(compassUrl, config));
 
   return {
-    id: config.name,
+    id: serviceId,
     name: config.name,
-    version: config.configVersion.toString(),
+    version: serviceVersion,
     summary: config.description || '',
     markdown: markdownTemplate,
   };

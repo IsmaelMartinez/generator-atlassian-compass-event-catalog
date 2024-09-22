@@ -1,0 +1,24 @@
+name: generator-atlassian-compass-event-catalog
+description: Event Catalog generator for Atlassian Compass files.
+typeId: SERVICE
+configVersion: 1
+ownerId: ari:cloud:identity::team/f58fb303-6322-419f-8c64-0cba6bdb3984
+fields:
+  tier: 1
+  lifecycle: Pre-release
+links: 
+  - name: GitHub Repo
+    type: REPOSITORY
+    url: https://github.com/IsmaelMartinez/generator-atlassian-compass-event-catalog
+  - name: Readme
+    type: DOCUMENT
+    url: https://github.com/IsmaelMartinez/generator-atlassian-compass-event-catalog/blob/main/README.md
+  - name: Teams Channel
+    type: CHAT_CHANNEL
+    url: >-
+      https://discord.com/channels/918092420338569216/1278989817304190999
+labels: 
+  - 'generator'
+  - 'source:github'
+  - synced-with-jsm
+customFields: []

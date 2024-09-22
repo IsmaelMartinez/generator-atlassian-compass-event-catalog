@@ -1,4 +1,4 @@
-import { expect, it, describe, beforeEach, afterEach, assert } from 'vitest';
+import { expect, it, describe, beforeEach, afterEach } from 'vitest';
 import utils from '@eventcatalog/sdk';
 import plugin from '../index';
 import { join } from 'node:path';
@@ -11,17 +11,19 @@ const eventCatalogConfig = {
 
 let catalogDir: string;
 
-const expectedMarkdown = `## Architecture diagram
+const expectedMarkdown = `## Links
 
-<NodeGraph />
+<Tiles>
+  <Tile icon=\"RocketLaunchIcon\" href=\"https://compass.atlassian.com/component/00000000-0000-0000-0000-000000000000\"  title=\"Compass Component\" description=\"Open the Atlassian Compass Component in a new window\" openWindow/>
+  <Tile icon=\"UserGroupIcon\" href=\"https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000\"  title=\"Compass Team\" description=\"Open Atlassian Compass Team in a new window\" openWindow/>
+<Tile href=\"https://www.example.com/projects/myproject\" openWindow title=\"My Jira project\"/>
+<Tile href=\"https://www.example.com/dashboards/service-dashboard\" openWindow title=\"Service dashboard\"/>
+<Tile href=\"https://www.example.com/repos/my-service-repo\" openWindow title=\"Service repository\"/>
+</Tiles>
 
-## Links
+## Architecture diagram
 
- * [Atlassian Compass Component](https://compass.atlassian.com/component/00000000-0000-0000-0000-000000000000)
- * [Atlassian Compass Team](https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000)
- * [My Jira project](https://www.example.com/projects/myproject)
- * [Service dashboard](https://www.example.com/dashboards/service-dashboard)
- * [Service repository](https://www.example.com/repos/my-service-repo)`;
+<NodeGraph />`;
 
 describe('Atlassian Compass generator tests', () => {
   beforeEach(() => {
@@ -37,7 +39,9 @@ describe('Atlassian Compass generator tests', () => {
     const { getService, getDomain } = utils(catalogDir);
     // Create the domain and service
     await plugin(eventCatalogConfig, {
-      path: join(__dirname, 'my-service-compass.yml'),
+      services: [{
+        path: join(__dirname, 'my-service-compass.yml'),
+      }],
       compassUrl: 'https://compass.atlassian.com',
       domain: {
         id: 'my-domain',
@@ -56,7 +60,7 @@ describe('Atlassian Compass generator tests', () => {
   <NodeGraph />`,
       name: 'My Domain',
       version: '0.0.1',
-      services: [{ id: 'my-service', version: '1' }],
+      services: [{ id: 'my-service', version: '0.0.0' }],
     });
 
     // Check that the service is created
@@ -68,7 +72,89 @@ describe('Atlassian Compass generator tests', () => {
       markdown: expectedMarkdown,
       name: 'my-service',
       summary: 'This is a sample component in Compass.',
-      version: '1',
+      version: '0.0.0',
+    });
+  });
+
+  it('creates a versioned service in the catalog for the domain', async () => {
+    const { getService, getDomain } = utils(catalogDir);
+    // Create the domain and service
+    await plugin(eventCatalogConfig, {
+      services: [{
+        path: join(__dirname, 'my-service-compass.yml'), version: '0.0.1',
+      }],
+      compassUrl: 'https://compass.atlassian.com',
+      domain: {
+        id: 'my-domain',
+        name: 'My Domain',
+        version: '0.0.1',
+      },
+    });
+
+    // Validate the domain is created
+    const domain = await getDomain('my-domain', '0.0.1');
+    expect(domain).toBeDefined();
+
+    expect(domain).toEqual({
+      id: 'my-domain',
+      markdown: `## Architecture diagram
+  <NodeGraph />`,
+      name: 'My Domain',
+      version: '0.0.1',
+      services: [{ id: 'my-service', version: '0.0.1' }],
+    });
+
+    // Check that the service is created
+    const service = await getService('my-service');
+    expect(service).toBeDefined();
+
+    expect(service).toEqual({
+      id: 'my-service',
+      markdown: expectedMarkdown,
+      name: 'my-service',
+      summary: 'This is a sample component in Compass.',
+      version: '0.0.1',
+    });
+  });
+
+  it('creates an id service in the catalog for the domain', async () => {
+    const { getService, getDomain } = utils(catalogDir);
+    // Create the domain and service
+    await plugin(eventCatalogConfig, {
+      services: [{
+        path: join(__dirname, 'my-service-compass.yml'), id: 'bananas',
+      }],
+      compassUrl: 'https://compass.atlassian.com',
+      domain: {
+        id: 'my-domain',
+        name: 'My Domain',
+        version: '0.0.1',
+      },
+    });
+
+    // Validate the domain is created
+    const domain = await getDomain('my-domain', '0.0.1');
+    expect(domain).toBeDefined();
+
+    expect(domain).toEqual({
+      id: 'my-domain',
+      markdown: `## Architecture diagram
+  <NodeGraph />`,
+      name: 'My Domain',
+      version: '0.0.1',
+      services: [{ id: 'bananas', version: '0.0.0' }],
+    });
+
+    // Check that the service is created
+    const service = await getService('bananas');
+    expect(service).toBeDefined();
+
+    expect(service).toEqual({
+      id: 'bananas',
+      markdown: expectedMarkdown,
+      name: 'my-service',
+      summary: 'This is a sample component in Compass.',
+      version: '0.0.0',
     });
   });
 
@@ -77,7 +163,7 @@ describe('Atlassian Compass generator tests', () => {
 
     // Create the domain and service
     await plugin(eventCatalogConfig, {
-      path: join(__dirname, 'my-service-compass.yml'),
+      services: [{path: join(__dirname, 'my-service-compass.yml')}],
       compassUrl: 'https://compass.atlassian.com',
       domain: {
         id: 'my-domain',
@@ -88,7 +174,7 @@ describe('Atlassian Compass generator tests', () => {
 
     // Update the domain
     await plugin(eventCatalogConfig, {
-      path: join(__dirname, 'my-service-compass.yml'),
+      services: [{path: join(__dirname, 'my-service-compass.yml')}],
       compassUrl: 'https://compass.atlassian.com',
       domain: {
         id: 'my-domain',
@@ -107,7 +193,7 @@ describe('Atlassian Compass generator tests', () => {
   <NodeGraph />`,
       name: 'My Domain',
       version: '0.0.1',
-      services: [{ id: 'my-service', version: '1' }],
+      services: [{ id: 'my-service', version: '0.0.0' }],
     });
 
     // Validate the domain is updated
@@ -120,7 +206,7 @@ describe('Atlassian Compass generator tests', () => {
   <NodeGraph />`,
       name: 'My Domain',
       version: '0.0.2',
-      services: [{ id: 'my-service', version: '1' }],
+      services: [{ id: 'my-service', version: '0.0.0' }],
     });
 
     // Check that the service is created
@@ -132,7 +218,7 @@ describe('Atlassian Compass generator tests', () => {
       markdown: expectedMarkdown,
       name: 'my-service',
       summary: 'This is a sample component in Compass.',
-      version: '1',
+      version: '0.0.0',
     });
   });
 
@@ -141,7 +227,7 @@ describe('Atlassian Compass generator tests', () => {
     // Create the domain and service
     await expect(
       plugin(eventCatalogConfig, {
-        path: join(__dirname, 'my-other-compass.notsupported.yml'),
+        services: [{path: join(__dirname, 'my-other-compass.notsupported.yml')}],
         compassUrl: 'https://compass.atlassian.com',
         domain: {
           id: 'my-domain',

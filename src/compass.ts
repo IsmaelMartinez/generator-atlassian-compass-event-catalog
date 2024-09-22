@@ -60,7 +60,7 @@ type CustomField = {
 };
 
 export type CompassConfig = {
-  configVersion: number;
+  configVersion?: number;
   name: string;
   id?: string;
   description?: string;
@@ -75,12 +75,6 @@ export type CompassConfig = {
   labels?: string[];
 };
 
-var config: CompassConfig = {
-  configVersion: 1,
-  name: '',
-};
-
 export function loadConfig(path: string): CompassConfig {
-  config = yaml.load(fs.readFileSync(path, 'utf8')) as CompassConfig;
-  return config;
+  return yaml.load(fs.readFileSync(path, 'utf8')) as CompassConfig;
 }
