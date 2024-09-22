@@ -39,9 +39,11 @@ describe('Atlassian Compass generator tests', () => {
     const { getService, getDomain } = utils(catalogDir);
     // Create the domain and service
     await plugin(eventCatalogConfig, {
-      services: [{
-        path: join(__dirname, 'my-service-compass.yml'),
-      }],
+      services: [
+        {
+          path: join(__dirname, 'my-service-compass.yml'),
+        },
+      ],
       compassUrl: 'https://compass.atlassian.com',
       domain: {
         id: 'my-domain',
@@ -80,9 +82,12 @@ describe('Atlassian Compass generator tests', () => {
     const { getService, getDomain } = utils(catalogDir);
     // Create the domain and service
     await plugin(eventCatalogConfig, {
-      services: [{
-        path: join(__dirname, 'my-service-compass.yml'), version: '0.0.1',
-      }],
+      services: [
+        {
+          path: join(__dirname, 'my-service-compass.yml'),
+          version: '0.0.1',
+        },
+      ],
       compassUrl: 'https://compass.atlassian.com',
       domain: {
         id: 'my-domain',
@@ -121,9 +126,12 @@ describe('Atlassian Compass generator tests', () => {
     const { getService, getDomain } = utils(catalogDir);
     // Create the domain and service
     await plugin(eventCatalogConfig, {
-      services: [{
-        path: join(__dirname, 'my-service-compass.yml'), id: 'bananas',
-      }],
+      services: [
+        {
+          path: join(__dirname, 'my-service-compass.yml'),
+          id: 'bananas',
+        },
+      ],
       compassUrl: 'https://compass.atlassian.com',
       domain: {
         id: 'my-domain',
@@ -163,7 +171,7 @@ describe('Atlassian Compass generator tests', () => {
 
     // Create the domain and service
     await plugin(eventCatalogConfig, {
-      services: [{path: join(__dirname, 'my-service-compass.yml')}],
+      services: [{ path: join(__dirname, 'my-service-compass.yml') }],
       compassUrl: 'https://compass.atlassian.com',
       domain: {
         id: 'my-domain',
@@ -174,7 +182,7 @@ describe('Atlassian Compass generator tests', () => {
 
     // Update the domain
     await plugin(eventCatalogConfig, {
-      services: [{path: join(__dirname, 'my-service-compass.yml')}],
+      services: [{ path: join(__dirname, 'my-service-compass.yml') }],
       compassUrl: 'https://compass.atlassian.com',
       domain: {
         id: 'my-domain',
@@ -227,7 +235,7 @@ describe('Atlassian Compass generator tests', () => {
     // Create the domain and service
     await expect(
       plugin(eventCatalogConfig, {
-        services: [{path: join(__dirname, 'my-other-compass.notsupported.yml')}],
+        services: [{ path: join(__dirname, 'my-other-compass.notsupported.yml') }],
         compassUrl: 'https://compass.atlassian.com',
         domain: {
           id: 'my-domain',

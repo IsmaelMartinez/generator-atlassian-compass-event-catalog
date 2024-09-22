@@ -1,4 +1,4 @@
-import {version} from 'os';
+import { version } from 'os';
 import path from 'path';
 import url from 'url';
 

@@ -50,12 +50,7 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
     const service = await getService(file.id || compassConfig.name);
 
     if (!service) {
-      const compassService = loadService(
-        compassConfig,
-        options.compassUrl.replace(/\/$/, ''),
-        file.version,
-        file.id
-      )
+      const compassService = loadService(compassConfig, options.compassUrl.replace(/\/$/, ''), file.version, file.id);
       await writeService(compassService);
       console.log(chalk.cyan(` - Service ${compassConfig.name} created!`));
     } else {

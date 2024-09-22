@@ -22,11 +22,10 @@ links:
     type: OTHER
     url: 'https://this-link-does-not-show-in-event-catalog'
 relationships: {}
-labels: 
+labels:
   - 'generator'
   - 'source:github'
   - synced-with-jsm
 customFields: []
-
 # Learn more about formatting compass.yml:
 # https://go.atlassian.com/compass-yml-format
