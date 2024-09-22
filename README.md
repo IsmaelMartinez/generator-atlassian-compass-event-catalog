@@ -1,44 +1,20 @@
-# EventCatalog Generator Template
+# Atlassian Compass EventCatalog Generator
 
-Starter project to create your own [generators](https://www.eventcatalog.dev/docs/development/plugins/generators) for EventCatalog.
+This generator can be used to create services in Event Catalog from an Atlassian Compass file.
 
-## Developing your own plugin
+# Getting started
 
-### 1. Clone this repo
+## Installation and configuration
 
-```
-git clone git@github.com:event-catalog/generator-template.git
-```
+_Make sure you are on the latest version of EventCatalog_.
 
-### 2. Install depencies
+1. Install the package
 
 ```sh
-# using pnpm
-pnpm i
-
-# using npm
-npm i
+npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
 ```
 
-### 3. Link the project
-
-Link the project so it can be used in your EventCatalog.
-
-```sh
-# default package name is @eventcatalog/generator-template, this will linked
-npm link
-```
-
-### 4. Using the package in your EventCatalog
-
-Navigate to your EventCatalog directory, then link the package.
-
-```sh
-# default name, this may have changed you renamed your package
-npm link @eventcatalog/generator-template
-```
-
-### 5. Configure your EventCatalog to use your generator
+2. Configure your EventCatalog to use your generator
 
 Edit your `eventcatalog.config.js` file and add the generator
 
@@ -46,45 +22,58 @@ Edit your `eventcatalog.config.js` file and add the generator
 ...
 generators: [
     [
-        "@eventcatalog/generator-template", 
+        "@ismaelmartinez/generator-atlassian-compass-event-catalog",
         // These are options to give your generator
         {
-            debug: true,
+            services: [
+                { 
+                    path: ["path/to/your/compass/file"], 
+                    version: "1.0.0" //Optional (defaults to 0.0.0)
+                    id: "your-service-id" //Optional (defaults to the `name` in the compass file)
+                }, // Repeat for each service
+            ],
+            compassUrl: "https://your.atlassian.compass.url",
+            domain: { id: 'orders', name: 'Compass', version: '1.0.0' }, //Optional
+            debug: false //Optional
         }
+        // Repeat for each domain
     ]
 ]
 ...
 ```
 
+If a domain is provided, the services will be added to it. If the domain does not exist, it will be created.
 
-### 6. Compile and watch your plugin
+Domain support versioning, while services require versioning. As Atlassian Compass doesn't have the concept of versions, services version will default to 0.0.0. If you want to version your services, you can provide a version in the generator configuration.
 
-In your plugin directory run:
+[(See full event catalog example)](examples/eventcatalog.config.js)
+
+3. Run the generate command
+
+On your EventCatalog project, run the generate command:
 
 ```sh
-# Just build the plugin once
-pnpm run build
-
-# Watch changes (recommended for dev)
-pnpm run build -- -- watch
-```
-
-### 7. Run your generator
-
-In your EventCatalog directory run:
-
-```
 npm run generate
 ```
 
-This will run your generator code and interact with your Catalog.
+4. See your new domains, services and messages, run
 
-You can now add your custom code to your generator to test against your catalog.
+```sh
+npm run dev
+```
 
-You can use the [EventCatalog SDK](https://www.eventcatalog.dev/docs/sdk) to get utils to read, write and delete files in your Catalog easier.
+## Features
 
----
+Currently, the generator only supports generating services from an Atlassian Compass file.
 
-### Contributing back to EventCatalog eco-system
+## Found a problem?
 
-Building a plugin? We would love to add it[ our integrations](https://www.eventcatalog.dev/integrations) and/or GitHub org. If this is something you are interested in you can reach out on [Discord](https://discord.gg/3rjaZMmrAm) or create an issue in this project.
+Raise a GitHub issue on this project, or contact us on [our Discord server](https://discord.gg/3rjaZMmrAm).
+
+## License
+
+See [LICENSE](LICENSE).
+
+## Contributing
+
+See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
