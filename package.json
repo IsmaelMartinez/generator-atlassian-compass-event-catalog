@@ -6,7 +6,9 @@
     "build": "tsup",
     "test": "vitest",
     "format": "prettier --write .",
-    "format:diff": "prettier --list-different ."
+    "format:diff": "prettier --list-different .",
+    "changeset": "changeset",
+    "release": "changeset publish"
   },
   "publishConfig": {
     "access": "public"
