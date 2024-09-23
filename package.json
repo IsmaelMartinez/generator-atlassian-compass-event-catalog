@@ -37,6 +37,7 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "dependencies": {
+    "@changesets/cli": "^2.27.8",
     "@eventcatalog/sdk": "^0.0.12",
     "chalk": "^4",
     "change-case": "^5.4.4",
