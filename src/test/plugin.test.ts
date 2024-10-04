@@ -7,19 +7,18 @@ import fs from 'fs/promises';
 // Fake eventcatalog config
 const eventCatalogConfig = {
   title: 'My EventCatalog',
+  homepageLink: 'https://bananas',
 };
 
 let catalogDir: string;
 
 const expectedMarkdown = `## Links
 
-<Tiles>
-  <Tile icon=\"RocketLaunchIcon\" href=\"https://compass.atlassian.com/component/00000000-0000-0000-0000-000000000000\"  title=\"Compass Component\" description=\"Open the Atlassian Compass Component in a new window\" openWindow/>
-  <Tile icon=\"UserGroupIcon\" href=\"https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000\"  title=\"Compass Team\" description=\"Open Atlassian Compass Team in a new window\" openWindow/>
-<Tile href=\"https://www.example.com/projects/myproject\" openWindow title=\"My Jira project\"/>
-<Tile href=\"https://www.example.com/dashboards/service-dashboard\" openWindow title=\"Service dashboard\"/>
-<Tile href=\"https://www.example.com/repos/my-service-repo\" openWindow title=\"Service repository\"/>
-</Tiles>
+* 🧭 [Compass Component](https://compass.atlassian.com/component/00000000-0000-0000-0000-000000000000)
+* 🪂 [Compass Team](https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000)
+* 🚀 [My Jira project](https://www.example.com/projects/myproject)
+* 👀 [Service dashboard](https://www.example.com/dashboards/service-dashboard)
+* 🏡 [Service repository](https://www.example.com/repos/my-service-repo)
 
 ## Architecture diagram
 
