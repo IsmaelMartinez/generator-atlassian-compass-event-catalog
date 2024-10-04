@@ -2,15 +2,14 @@ import { CompassConfig } from './compass';
 import { Service } from './types';
 
 enum UrlTypeToIcon {
-    CHAT_CHANNEL = '💬',
-    DOCUMENT = '📖',
-    DASHBOARD = '👀',
-    ON_CALL = '📲',
-    PROJECT = '🚀',
-    REPOSITORY = '🏡',
-    OTHER_LINK = '⭐',
+  CHAT_CHANNEL = '💬',
+  DOCUMENT = '📖',
+  DASHBOARD = '👀',
+  ON_CALL = '📲',
+  PROJECT = '🚀',
+  REPOSITORY = '🏡',
+  OTHER_LINK = '⭐',
 }
-
 
 export const defaultMarkdown = (config: CompassConfig, compassComponentUrl?: string, compassTeamUrl?: string) => {
   return `
