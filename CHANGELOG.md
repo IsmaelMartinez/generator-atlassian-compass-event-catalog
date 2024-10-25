@@ -1,5 +1,11 @@
 # @ismaelmartinez/generator-atlassian-compass-event-catalog
 
+## 0.0.4
+
+### Patch Changes
+
+- 85cf3f5: update dependencies and improve documentation
+
 ## 0.0.3
 
 ### Patch Changes
