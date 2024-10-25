@@ -38,27 +38,27 @@ You can link the project to your EventCatalog to test your generator.
 npm link
 ```
 
-After linking, then you can navidate to your EventCatalog directory and link back the package.
+After linking, then you can navigate to your EventCatalog directory and link back the package.
 
 ```sh
 npm link @ismaelmartinez/generator-atlassian-compass-event-catalog
 ```
 
-Then, in the generator project, you can run the build command to build the project.
+Then, in the this generator project, you can run the build command to build the project.
 
 ```sh
 pnpm run build
 ```
 
-Finally, you can run the generator in your EventCatalog project.
+Finally, you can run the generate command in your EventCatalog project as you will do when using the package.
 
 ```sh
 npm run generate
 ```
 
-This will run your generator code and interact with your Catalog.
+You should be ready to start developing with the generator. Open and [issue](https://github.com/IsmaelMartinez/generator-atlassian-compass-event-catalog/issues) if you find any problems.
 
-Now you are ready to start developing your generator.
+
 
 EventCatalog uses [EventCatalog SDK](https://www.eventcatalog.dev/docs/sdk) to interact with the Catalog.
 
