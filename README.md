@@ -1,6 +1,6 @@
 # Atlassian Compass EventCatalog Generator
 
-This generator can be used to create services in Event Catalog from an Atlassian Compass file.
+This generator can be used to create services in Event Catalog from an [Atlassian Compass file].
 
 # Getting started
 
@@ -10,61 +10,59 @@ _Make sure you are on the latest version of EventCatalog_.
 
 1. Install the package
 
-```sh
-npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
-```
+   ```sh
+   npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
+   ```
 
-2. Configure your EventCatalog to use your generator
+1. Configure your EventCatalog to use your generator
 
-Edit your `eventcatalog.config.js` file and add the generator
+   Edit your `eventcatalog.config.js` file and add the generator
 
-```js
-...
-generators: [
-    [
-        "@ismaelmartinez/generator-atlassian-compass-event-catalog",
-        // These are options to give your generator
-        {
-            services: [
-                {
-                    path: ["path/to/your/compass/file"],
-                    version: "1.0.0" //Optional (defaults to 0.0.0)
-                    id: "your-service-id" //Optional (defaults to the `name` in the compass file)
-                }, // Repeat for each service
-            ],
-            compassUrl: "https://your.atlassian.compass.url",
-            domain: { id: 'orders', name: 'Compass', version: '1.0.0' }, //Optional
-            debug: false //Optional
-        }
-        // Repeat for each domain
-    ]
-]
-...
-```
+   ```js
+   ...
+   generators: [
+       [
+           "@ismaelmartinez/generator-atlassian-compass-event-catalog",
+           // These are options to give your generator
+           {
+               services: [
+                   {
+                       path: ["path/to/your/compass/file"],
+                       version: "1.0.0" //Optional (defaults to 0.0.0)
+                       id: "your-service-id" //Optional (defaults to the `name` in the compass file)
+                   }, // Repeat for each service
+               ],
+               compassUrl: "https://your.atlassian.compass.url",
+               domain: { id: 'orders', name: 'Compass', version: '1.0.0' }, //Optional
+               debug: false //Optional
+           }
+           // Repeat for each domain
+       ]
+   ]
+   ...
+   ```
 
-If a domain is provided, the services will be added to it. If the domain does not exist, it will be created.
+   [Example configuration file](examples/eventcatalog.config.js)
 
-Domain support versioning, while services require versioning. As Atlassian Compass doesn't have the concept of versions, services version will default to 0.0.0. If you want to version your services, you can provide a version in the generator configuration.
+   NOTE: If a domain is provided, the services will be added to it. If the domain does not exist, it will be created.
 
-[(See full event catalog example)](examples/eventcatalog.config.js)
+1. Generate your services
 
-3. Run the generate command
+   On your EventCatalog project, run the generate command:
 
-On your EventCatalog project, run the generate command:
+   ```sh
+   npm run generate
+   ```
 
-```sh
-npm run generate
-```
+1. And explore your services in your catalog:
 
-4. See your new domains, services and messages, run
-
-```sh
-npm run dev
-```
+   ```sh
+   npm run dev
+   ```
 
 ## Features
 
-Currently, the generator only supports generating services from an Atlassian Compass file.
+Currently, the generator only supports generating services from an [Atlassian Compass file].
 
 By design, the links with name 'null' are ignored. This is to allow having the links to EventCatalog in the Compass file without having to worry to show the link in the EventCatalog Service page.
 
@@ -79,3 +77,5 @@ See [LICENSE](LICENSE).
 ## Contributing
 
 See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
+
+[Atlassian Compass file]: https://developer.atlassian.com/cloud/compass/config-as-code/structure-and-contents-of-a-compass-yml-file/
