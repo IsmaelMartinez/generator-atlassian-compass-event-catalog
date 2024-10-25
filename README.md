@@ -10,54 +10,55 @@ _Make sure you are on the latest version of EventCatalog_.
 
 1. Install the package
 
-    ```sh
-    npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
-    ```
+   ```sh
+   npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
+   ```
 
 1. Configure your EventCatalog to use your generator
 
-    Edit your `eventcatalog.config.js` file and add the generator
+   Edit your `eventcatalog.config.js` file and add the generator
 
-    ```js
-    ...
-    generators: [
-        [
-            "@ismaelmartinez/generator-atlassian-compass-event-catalog",
-            // These are options to give your generator
-            {
-                services: [
-                    {
-                        path: ["path/to/your/compass/file"],
-                        version: "1.0.0" //Optional (defaults to 0.0.0)
-                        id: "your-service-id" //Optional (defaults to the `name` in the compass file)
-                    }, // Repeat for each service
-                ],
-                compassUrl: "https://your.atlassian.compass.url",
-                domain: { id: 'orders', name: 'Compass', version: '1.0.0' }, //Optional
-                debug: false //Optional
-            }
-            // Repeat for each domain
-        ]
-    ]
-    ...
-    ```
-    [Example configuration file](examples/eventcatalog.config.js)
+   ```js
+   ...
+   generators: [
+       [
+           "@ismaelmartinez/generator-atlassian-compass-event-catalog",
+           // These are options to give your generator
+           {
+               services: [
+                   {
+                       path: ["path/to/your/compass/file"],
+                       version: "1.0.0" //Optional (defaults to 0.0.0)
+                       id: "your-service-id" //Optional (defaults to the `name` in the compass file)
+                   }, // Repeat for each service
+               ],
+               compassUrl: "https://your.atlassian.compass.url",
+               domain: { id: 'orders', name: 'Compass', version: '1.0.0' }, //Optional
+               debug: false //Optional
+           }
+           // Repeat for each domain
+       ]
+   ]
+   ...
+   ```
 
-    NOTE: If a domain is provided, the services will be added to it. If the domain does not exist, it will be created.
+   [Example configuration file](examples/eventcatalog.config.js)
+
+   NOTE: If a domain is provided, the services will be added to it. If the domain does not exist, it will be created.
 
 1. Generate your services
 
-    On your EventCatalog project, run the generate command:
+   On your EventCatalog project, run the generate command:
 
-    ```sh
-    npm run generate
-    ```
+   ```sh
+   npm run generate
+   ```
 
 1. And explore your services in your catalog:
 
-    ```sh
-    npm run dev
-    ```
+   ```sh
+   npm run dev
+   ```
 
 ## Features
 

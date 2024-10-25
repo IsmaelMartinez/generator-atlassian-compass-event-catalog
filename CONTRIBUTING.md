@@ -10,19 +10,19 @@ We welcome contributions to this project.
 
 1. Clone the repository
 
-    Once forked, clone the repository to your machine.
+   Once forked, clone the repository to your machine.
 
-    ```sh
-    git clone git@github.com:ismaelmartinez/generator-compass-event-catalog.git
-    ```
+   ```sh
+   git clone git@github.com:ismaelmartinez/generator-compass-event-catalog.git
+   ```
 
 1. Install the dependencies
 
-    The project uses [pnpm](https://pnpm.io/) as the package manager.
+   The project uses [pnpm](https://pnpm.io/) as the package manager.
 
-    ```sh
-    pnpm install
-    ```
+   ```sh
+   pnpm install
+   ```
 
 ## Developing
 
