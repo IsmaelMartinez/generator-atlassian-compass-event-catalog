@@ -1,5 +1,11 @@
 # @ismaelmartinez/generator-atlassian-compass-event-catalog
 
+## 0.0.5
+
+### Patch Changes
+
+- 7bfa0ac: update dependencies and adding default PROJECT_DIR when not present
+
 ## 0.0.4
 
 ### Patch Changes
