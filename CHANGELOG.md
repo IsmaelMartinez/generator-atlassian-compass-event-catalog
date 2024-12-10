@@ -1,5 +1,11 @@
 # @ismaelmartinez/generator-atlassian-compass-event-catalog
 
+## 0.0.6
+
+### Patch Changes
+
+- 5600c7a: fix chalk version to 4 to avoid ESM breaking changes
+
 ## 0.0.5
 
 ### Patch Changes
