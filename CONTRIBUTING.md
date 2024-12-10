@@ -58,8 +58,6 @@ npm run generate
 
 You should be ready to start developing with the generator. Open and [issue](https://github.com/IsmaelMartinez/generator-atlassian-compass-event-catalog/issues) if you find any problems.
 
-
-
 EventCatalog uses [EventCatalog SDK](https://www.eventcatalog.dev/docs/sdk) to interact with the Catalog.
 
 You can also explore the [get started building compass apps](https://developer.atlassian.com/cloud/compass/integrations/get-started-integrating-with-Compass/#get-started-building-compass-apps) to learn more about the Compass API. I haven't explore it yet.
