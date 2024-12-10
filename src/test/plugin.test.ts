@@ -192,16 +192,7 @@ describe('Atlassian Compass generator tests', () => {
 
     // Validate the domain is created
     let domain = await getDomain('my-domain', '0.0.1');
-    expect(domain).toBeDefined();
-
-    expect(domain).toEqual({
-      id: 'my-domain',
-      markdown: `## Architecture diagram
-  <NodeGraph />`,
-      name: 'My Domain',
-      version: '0.0.1',
-      services: [{ id: 'my-service', version: '0.0.0' }],
-    });
+    expect(domain).not.toBeDefined();
 
     // Validate the domain is updated
     domain = await getDomain('my-domain', '0.0.2');

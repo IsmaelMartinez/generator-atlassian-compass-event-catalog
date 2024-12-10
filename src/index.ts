@@ -12,11 +12,11 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
   // This is set by EventCatalog. This is the directory where the catalog is stored
   console.log(chalk.green(`Processing ${options.services.length} Compass files...`));
 
-  const projectDir = process.env.PROJECT_DIR;
-
-  if (!projectDir) {
-    throw new Error('Please provide catalog url (env variable PROJECT_DIR)');
+  if (!process.env.PROJECT_DIR) {
+    process.env.PROJECT_DIR = process.cwd();
   }
+
+  const projectDir = process.env.PROJECT_DIR;
 
   if (options.debug) {
     console.debug(chalk.magenta('Configuration provided', JSON.stringify(config)));
