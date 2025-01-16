@@ -11,7 +11,7 @@ _Make sure you are on the latest version of EventCatalog_.
 1. Install the package
 
    ```sh
-   npm install -g @ismaelmartinez/generator-atlassian-compass-event-catalog
+   npm install @ismaelmartinez/generator-atlassian-compass-event-catalog
    ```
 
 1. Configure your EventCatalog to use your generator
