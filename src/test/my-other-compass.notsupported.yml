@@ -2,7 +2,7 @@ configVersion: 1
 name: my-other-component
 id: 'ari:cloud:compass:a0000000-b000-c000-d000-e00000000000:component/00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-000000000000'
 description: This is a sample component in Compass.
-ownerId: 'ari:cloud:teams::team/00000000-0000-0000-0000-000000000000'
+ownerId: null
 typeId: OTHER
 fields:
   tier: 1

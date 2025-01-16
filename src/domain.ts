@@ -1,6 +1,5 @@
 import utils from '@eventcatalog/sdk';
 import chalk from 'chalk';
-import { CompassConfig } from './compass';
 
 export default class Domain {
   id: string;

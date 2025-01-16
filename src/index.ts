@@ -2,6 +2,7 @@ import utils from '@eventcatalog/sdk';
 import chalk from 'chalk';
 import { loadConfig, CompassConfig } from './compass';
 import { loadService } from './service';
+import { loadTeam } from './team';
 import Domain from './domain';
 import { GeneratorProps } from './types';
 
@@ -16,7 +17,9 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
     process.env.PROJECT_DIR = process.cwd();
   }
 
-  const projectDir = process.env.PROJECT_DIR;
+  if (!process.env.PROJECT_DIR) {
+    throw new Error('Please provide catalog url (env variable PROJECT_DIR)');
+  }
 
   if (options.debug) {
     console.debug(chalk.magenta('Configuration provided', JSON.stringify(config)));
@@ -25,12 +28,12 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
   const compassFiles = Array.isArray(options.services) ? options.services : [options.services];
 
   // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
-  const { getService, writeService } = utils(projectDir);
+  const { getService, writeService } = utils(process.env.PROJECT_DIR);
 
   let domain = null;
 
   if (options.domain) {
-    domain = new Domain(options.domain.id, options.domain.name, options.domain.version, projectDir);
+    domain = new Domain(options.domain.id, options.domain.name, options.domain.version, process.env.PROJECT_DIR);
     await domain.processDomain();
   }
 
@@ -55,6 +58,10 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
       console.log(chalk.cyan(` - Service ${compassConfig.name} created!`));
     } else {
       console.log(chalk.yellow(` - Service ${compassConfig.name} already exists, skipped creation...`));
+    }
+
+    if (compassConfig.ownerId) {
+      await loadTeam(compassConfig.ownerId, process.env.PROJECT_DIR);
     }
   }
   console.log(chalk.green(`\nFinished generating event catalog for the Compass files provided!`));

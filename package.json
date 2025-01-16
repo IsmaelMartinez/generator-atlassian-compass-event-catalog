@@ -1,6 +1,6 @@
 {
   "name": "@ismaelmartinez/generator-atlassian-compass-event-catalog",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "description": "Atlassian Compass generator for Event Catalog",
   "scripts": {
     "build": "tsup",
@@ -41,6 +41,7 @@
     "@eventcatalog/sdk": "^1.4.2",
     "chalk": "^4.1.2",
     "change-case": "^5.4.4",
+    "graphql": "^16.10.0",
     "js-yaml": "^4.1.0"
   }
 }
