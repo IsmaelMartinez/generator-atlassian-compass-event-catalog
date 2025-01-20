@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@changesets/cli':
         specifier: ^2.27.10
-        version: 2.27.10
+        version: 2.27.11
       '@eventcatalog/sdk':
         specifier: ^1.4.2
         version: 1.4.2
@@ -49,8 +49,8 @@ packages:
     resolution: {integrity: sha512-FDSOghenHTiToteC/QRlv2q3DhPZ/oOXTBoirfWNx1Cx3TMVcGWQtMMmQcSvb/JjpNeGzx8Pq/b4fKEJuWm1sw==}
     engines: {node: '>=6.9.0'}
 
-  '@changesets/apply-release-plan@7.0.6':
-    resolution: {integrity: sha512-TKhVLtiwtQOgMAC0fCJfmv93faiViKSDqr8oMEqrnNs99gtSC1sZh/aEMS9a+dseU1ESZRCK+ofLgGY7o0fw/Q==}
+  '@changesets/apply-release-plan@7.0.7':
+    resolution: {integrity: sha512-qnPOcmmmnD0MfMg9DjU1/onORFyRpDXkMMl2IJg9mECY6RnxL3wN0TCCc92b2sXt1jt8DgjAUUsZYGUGTdYIXA==}
 
   '@changesets/assemble-release-plan@6.0.5':
     resolution: {integrity: sha512-IgvBWLNKZd6k4t72MBTBK3nkygi0j3t3zdC1zrfusYo0KpdsvnDjrMM9vPnTCLCMlfNs55jRL4gIMybxa64FCQ==}
@@ -58,12 +58,12 @@ packages:
   '@changesets/changelog-git@0.2.0':
     resolution: {integrity: sha512-bHOx97iFI4OClIT35Lok3sJAwM31VbUM++gnMBV16fdbtBhgYu4dxsphBF/0AZZsyAHMrnM0yFcj5gZM1py6uQ==}
 
-  '@changesets/cli@2.27.10':
-    resolution: {integrity: sha512-PfeXjvs9OfQJV8QSFFHjwHX3QnUL9elPEQ47SgkiwzLgtKGyuikWjrdM+lO9MXzOE22FO9jEGkcs4b+B6D6X0Q==}
+  '@changesets/cli@2.27.11':
+    resolution: {integrity: sha512-1QislpE+nvJgSZZo9+Lj3Lno5pKBgN46dAV8IVxKJy9wX8AOrs9nn5pYVZuDpoxWJJCALmbfOsHkyxujgetQSg==}
     hasBin: true
 
-  '@changesets/config@3.0.4':
-    resolution: {integrity: sha512-+DiIwtEBpvvv1z30f8bbOsUQGuccnZl9KRKMM/LxUHuDu5oEjmN+bJQ1RIBKNJjfYMQn8RZzoPiX0UgPaLQyXw==}
+  '@changesets/config@3.0.5':
+    resolution: {integrity: sha512-QyXLSSd10GquX7hY0Mt4yQFMEeqnO5z/XLpbIr4PAkNNoQNKwDyiSrx4yd749WddusH1v3OSiA0NRAYmH/APpQ==}
 
   '@changesets/errors@0.2.0':
     resolution: {integrity: sha512-6BLOQUscTpZeGljvyQXlWOItQyU71kCdGz7Pi8H8zdw6BI0g3m43iL4xKUVPWtG+qrrL9DTjpdn8eYuCQSRpow==}
@@ -71,8 +71,8 @@ packages:
   '@changesets/get-dependents-graph@2.1.2':
     resolution: {integrity: sha512-sgcHRkiBY9i4zWYBwlVyAjEM9sAzs4wYVwJUdnbDLnVG3QwAaia1Mk5P8M7kraTOZN+vBET7n8KyB0YXCbFRLQ==}
 
-  '@changesets/get-release-plan@4.0.5':
-    resolution: {integrity: sha512-E6wW7JoSMcctdVakut0UB76FrrN3KIeJSXvB+DHMFo99CnC3ZVnNYDCVNClMlqAhYGmLmAj77QfApaI3ca4Fkw==}
+  '@changesets/get-release-plan@4.0.6':
+    resolution: {integrity: sha512-FHRwBkY7Eili04Y5YMOZb0ezQzKikTka4wL753vfUA5COSebt7KThqiuCN9BewE4/qFGgF/5t3AuzXx1/UAY4w==}
 
   '@changesets/get-version-range-type@0.4.0':
     resolution: {integrity: sha512-hwawtob9DryoGTpixy1D3ZXbGgJu1Rhr+ySH2PvTLHvkZuQ7sRT4oQwMh0hbqZH1weAooedEjRsbrWcGLCeyVQ==}
@@ -864,12 +864,12 @@ packages:
     resolution: {integrity: sha512-hMQ4CX1p1izmuLYyZqLMO/qGNw10wSv9QDCPfzXfyFrOaCSSoRfqE1Kf1s5an66J5JZC62NewG+mK49jOCtQew==}
     engines: {node: '>=4'}
 
-  fast-glob@3.3.2:
-    resolution: {integrity: sha512-oX2ruAFQwf/Orj8m737Y5adxDQO0LAB7/S5MnxCdTNDd4p6BsyIVsv9JQsATbTSq8KHRpLwIHbVlUNatxd+1Ow==}
+  fast-glob@3.3.3:
+    resolution: {integrity: sha512-7MptL8U0cqcFdzIzwOTHoilX9x5BrNqye7Z/LuC7kCMRio1EMSyqRK3BEAUD7sXRq4iT4AzTVuZdhgQ2TCvYLg==}
     engines: {node: '>=8.6.0'}
 
-  fastq@1.17.1:
-    resolution: {integrity: sha512-sRVD3lWVIXWg6By68ZN7vho9a1pQcN/WBFaAAsDDFzlJjvoGx0P8z7V1t72grFJfJhu3YPZBuu25f7Kaw2jN1w==}
+  fastq@1.18.0:
+    resolution: {integrity: sha512-QKHXPW0hD8g4UET03SdOdunzSouc9N4AuHdsX8XNcTsuz+yYFILVNIX4l9yHABMhiEI9Db0JTTIpu0wB+Y1QQw==}
 
   fdir@6.4.2:
     resolution: {integrity: sha512-KnhMXsKSPZlAhp7+IjUkRZKPb4fUyccpDrdFXbi4QL1qkmFh9kVY09Yox+n4MaOb3lHZ1Tv829C3oaaXoMYPDQ==}
@@ -1110,8 +1110,8 @@ packages:
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
 
-  package-manager-detector@0.2.2:
-    resolution: {integrity: sha512-VgXbyrSNsml4eHWIvxxG/nTL4wgybMTXCV2Un/+yEc3aDKKU6nQBZjbeP3Pl3qm9Qg92X/1ng4ffvCeD/zwHgg==}
+  package-manager-detector@0.2.8:
+    resolution: {integrity: sha512-ts9KSdroZisdvKMWVAVCXiKqnqNfXz4+IbrBG8/BWx/TR5le+jfenvoBuIZ6UWM9nz47W7AbD9qYfAwfWMIwzA==}
 
   path-exists@4.0.0:
     resolution: {integrity: sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==}
@@ -1520,9 +1520,9 @@ snapshots:
     dependencies:
       regenerator-runtime: 0.14.1
 
-  '@changesets/apply-release-plan@7.0.6':
+  '@changesets/apply-release-plan@7.0.7':
     dependencies:
-      '@changesets/config': 3.0.4
+      '@changesets/config': 3.0.5
       '@changesets/get-version-range-type': 0.4.0
       '@changesets/git': 3.0.2
       '@changesets/should-skip-package': 0.1.1
@@ -1549,15 +1549,15 @@ snapshots:
     dependencies:
       '@changesets/types': 6.0.0
 
-  '@changesets/cli@2.27.10':
+  '@changesets/cli@2.27.11':
     dependencies:
-      '@changesets/apply-release-plan': 7.0.6
+      '@changesets/apply-release-plan': 7.0.7
       '@changesets/assemble-release-plan': 6.0.5
       '@changesets/changelog-git': 0.2.0
-      '@changesets/config': 3.0.4
+      '@changesets/config': 3.0.5
       '@changesets/errors': 0.2.0
       '@changesets/get-dependents-graph': 2.1.2
-      '@changesets/get-release-plan': 4.0.5
+      '@changesets/get-release-plan': 4.0.6
       '@changesets/git': 3.0.2
       '@changesets/logger': 0.1.1
       '@changesets/pre': 2.0.1
@@ -1573,14 +1573,14 @@ snapshots:
       fs-extra: 7.0.1
       mri: 1.2.0
       p-limit: 2.3.0
-      package-manager-detector: 0.2.2
+      package-manager-detector: 0.2.8
       picocolors: 1.1.1
       resolve-from: 5.0.0
       semver: 7.6.3
       spawndamnit: 3.0.1
       term-size: 2.2.1
 
-  '@changesets/config@3.0.4':
+  '@changesets/config@3.0.5':
     dependencies:
       '@changesets/errors': 0.2.0
       '@changesets/get-dependents-graph': 2.1.2
@@ -1601,10 +1601,10 @@ snapshots:
       picocolors: 1.1.1
       semver: 7.6.3
 
-  '@changesets/get-release-plan@4.0.5':
+  '@changesets/get-release-plan@4.0.6':
     dependencies:
       '@changesets/assemble-release-plan': 6.0.5
-      '@changesets/config': 3.0.4
+      '@changesets/config': 3.0.5
       '@changesets/pre': 2.0.1
       '@changesets/read': 0.6.2
       '@changesets/types': 6.0.0
@@ -1811,7 +1811,7 @@ snapshots:
 
   '@eventcatalog/sdk@1.4.2':
     dependencies:
-      '@changesets/cli': 2.27.10
+      '@changesets/cli': 2.27.11
       fs-extra: 11.2.0
       glob: 11.0.0
       gray-matter: 4.0.3
@@ -1882,7 +1882,7 @@ snapshots:
   '@nodelib/fs.walk@1.2.8':
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
-      fastq: 1.17.1
+      fastq: 1.18.0
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
@@ -2241,7 +2241,7 @@ snapshots:
       iconv-lite: 0.4.24
       tmp: 0.0.33
 
-  fast-glob@3.3.2:
+  fast-glob@3.3.3:
     dependencies:
       '@nodelib/fs.stat': 2.0.5
       '@nodelib/fs.walk': 1.2.8
@@ -2249,7 +2249,7 @@ snapshots:
       merge2: 1.4.1
       micromatch: 4.0.8
 
-  fastq@1.17.1:
+  fastq@1.18.0:
     dependencies:
       reusify: 1.0.4
 
@@ -2318,7 +2318,7 @@ snapshots:
     dependencies:
       array-union: 2.1.0
       dir-glob: 3.0.1
-      fast-glob: 3.3.2
+      fast-glob: 3.3.3
       ignore: 5.3.2
       merge2: 1.4.1
       slash: 3.0.0
@@ -2472,7 +2472,7 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
-  package-manager-detector@0.2.2: {}
+  package-manager-detector@0.2.8: {}
 
   path-exists@4.0.0: {}
 
