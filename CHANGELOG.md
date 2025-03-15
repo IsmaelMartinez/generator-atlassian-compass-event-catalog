@@ -1,5 +1,11 @@
 # @ismaelmartinez/generator-atlassian-compass-event-catalog
 
+## 0.0.8
+
+### Patch Changes
+
+- 3c0a302: Updating depencencies and moving to eventcatalog/sdk 2.0.0
+
 ## 0.0.7
 
 ### Patch Changes
