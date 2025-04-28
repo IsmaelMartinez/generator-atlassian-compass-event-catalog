@@ -13,7 +13,7 @@ importers:
         version: 2.29.2
       '@eventcatalog/sdk':
         specifier: ^2.0.0
-        version: 2.3.0
+        version: 2.3.4
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -404,8 +404,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@eventcatalog/sdk@2.3.0':
-    resolution: {integrity: sha512-x8HkfA+yO54cECQhdeRTOs8LOhg1yYkd8nSN0p/giQPe4Gc1tixdm0JeUWwHYaERL8zrjbslvP3a1HkyoeXkbg==}
+  '@eventcatalog/sdk@2.3.4':
+    resolution: {integrity: sha512-yfbkNdWC2Ay51U5CYf4ythg6Q+UZnjdTKtuTWwexUXwga6dsw2dG3eMAB3Sm5JJ+yDOB4jZ5CnKyQ9NiEol8pg==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -940,8 +940,8 @@ packages:
     resolution: {integrity: sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==}
     hasBin: true
 
-  glob@11.0.1:
-    resolution: {integrity: sha512-zrQDm8XPnYEKawJScsnM0QzobJxlT/kHOOlRTio8IH/GrmxRE5fjllkzdaHclIuNjUQTJYH2xHNIGfdpJkDJUw==}
+  glob@11.0.2:
+    resolution: {integrity: sha512-YT7U7Vye+t5fZ/QMkBFrTJ7ZQxInIUjwyAjVj84CYXqgBdv30MFUPGnBR6sQaVq6Is15wYJUsnzTuWaGRBhBAQ==}
     engines: {node: 20 || >=22}
     hasBin: true
 
@@ -1855,11 +1855,11 @@ snapshots:
   '@esbuild/win32-x64@0.25.2':
     optional: true
 
-  '@eventcatalog/sdk@2.3.0':
+  '@eventcatalog/sdk@2.3.4':
     dependencies:
       '@changesets/cli': 2.29.2
       fs-extra: 11.3.0
-      glob: 11.0.1
+      glob: 11.0.2
       gray-matter: 4.0.3
       proper-lockfile: 4.1.2
       semver: 7.6.3
@@ -2358,7 +2358,7 @@ snapshots:
       package-json-from-dist: 1.0.1
       path-scurry: 1.11.1
 
-  glob@11.0.1:
+  glob@11.0.2:
     dependencies:
       foreground-child: 3.3.1
       jackspeak: 4.1.0
