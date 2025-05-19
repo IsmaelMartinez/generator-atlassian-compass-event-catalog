@@ -1,4 +1,6 @@
 name: Tests
+permissions:
+  contents: read
 
 on:
   pull_request:
@@ -7,7 +9,6 @@ on:
   push:
     branches:
       - main
-
 jobs:
   build:
     name: Tests
