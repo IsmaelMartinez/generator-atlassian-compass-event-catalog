@@ -13,7 +13,7 @@ importers:
         version: 2.29.4
       '@eventcatalog/sdk':
         specifier: ^2.0.0
-        version: 2.4.0
+        version: 2.5.3
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -254,8 +254,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@eventcatalog/sdk@2.4.0':
-    resolution: {integrity: sha512-EVJwgh7UbT0UURopNNzvCQtkn5xppFLA+rH8iD0HsgDFxOdnPkFBtVW5sTHPBmt863o6VW2CDny8ABJENN3O8A==}
+  '@eventcatalog/sdk@2.5.3':
+    resolution: {integrity: sha512-zARE4L7yTifCZhtK089ZJFl5xEoxUyxiVcidcbDX5ZDaMvzI3Szdyjl7N3FUkbRlzeZwjatZYHjhuIR+YOyESw==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -756,8 +756,8 @@ packages:
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
-  jackspeak@4.1.0:
-    resolution: {integrity: sha512-9DDdhb5j6cpeitCbvLO7n7J4IxnbM6hoF6O1g4HQ5TfhvvKN8ywDM7668ZhMHRqVmxqhps/F6syWK2KcPxYlkw==}
+  jackspeak@4.1.1:
+    resolution: {integrity: sha512-zptv57P3GpL+O0I7VdMJNBZCu+BPHVQUk55Ft8/QCJjTVxrnJHuVuX/0Bl2A6/+2oyR/ZMEuFKwmzqqZ/U5nPQ==}
     engines: {node: 20 || >=22}
 
   joycon@3.1.1:
@@ -1529,7 +1529,7 @@ snapshots:
   '@esbuild/win32-x64@0.25.4':
     optional: true
 
-  '@eventcatalog/sdk@2.4.0':
+  '@eventcatalog/sdk@2.5.3':
     dependencies:
       '@changesets/cli': 2.29.4
       fs-extra: 11.3.0
@@ -1955,7 +1955,7 @@ snapshots:
   glob@11.0.2:
     dependencies:
       foreground-child: 3.3.1
-      jackspeak: 4.1.0
+      jackspeak: 4.1.1
       minimatch: 10.0.1
       minipass: 7.1.2
       package-json-from-dist: 1.0.1
@@ -2013,7 +2013,7 @@ snapshots:
     optionalDependencies:
       '@pkgjs/parseargs': 0.11.0
 
-  jackspeak@4.1.0:
+  jackspeak@4.1.1:
     dependencies:
       '@isaacs/cliui': 8.0.2
 
