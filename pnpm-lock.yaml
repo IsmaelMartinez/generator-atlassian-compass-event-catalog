@@ -13,7 +13,7 @@ importers:
         version: 2.29.4
       '@eventcatalog/sdk':
         specifier: ^2.0.0
-        version: 2.5.5
+        version: 2.6.0
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -29,7 +29,7 @@ importers:
         version: 4.0.9
       '@types/node':
         specifier: ^22.13.10
-        version: 22.15.24
+        version: 22.15.29
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
@@ -41,7 +41,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^3.0.8
-        version: 3.1.4(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0)
+        version: 3.1.4(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0)
 
 packages:
 
@@ -404,8 +404,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@eventcatalog/sdk@2.5.5':
-    resolution: {integrity: sha512-nTFw4gl7gNiAhMtCzh13rLAurB5TyBKcrb5duMbjq5y3AowDwfDBGJsrbHA7miHsczLo0m0K0CBdFUHDt/fQqQ==}
+  '@eventcatalog/sdk@2.6.0':
+    resolution: {integrity: sha512-MTbzyMdvcdHKspAJ4uuQX0lu7H2CkayxhrKArKSNRhdG3nxK8eNFh+tCkCLzYpTTbQnzlbEN08T29weFp5G0iA==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -663,8 +663,8 @@ packages:
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
 
-  '@types/node@22.15.24':
-    resolution: {integrity: sha512-w9CZGm9RDjzTh/D+hFwlBJ3ziUaVw7oufKA3vOFSOZlzmW9AkZnfjPb+DLnrV6qtgL/LNmP0/2zBNCFHL3F0ng==}
+  '@types/node@22.15.29':
+    resolution: {integrity: sha512-LNdjOkUDlU1RZb8e1kOIUpN1qQUlzGkEtbVNo53vbrwDg5om6oduhm4SiUaPW5ASTXhAiP0jInWG8Qx9fVlOeQ==}
 
   '@vitest/expect@3.1.4':
     resolution: {integrity: sha512-xkD/ljeliyaClDYqHPNCiJ0plY5YIcM0OlRiZizLhlPmpXWpxnGMyTZXOHFhFeG7w9P5PBeL4IdtJ/HeQwTbQA==}
@@ -1010,8 +1010,8 @@ packages:
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
-  jackspeak@4.1.0:
-    resolution: {integrity: sha512-9DDdhb5j6cpeitCbvLO7n7J4IxnbM6hoF6O1g4HQ5TfhvvKN8ywDM7668ZhMHRqVmxqhps/F6syWK2KcPxYlkw==}
+  jackspeak@4.1.1:
+    resolution: {integrity: sha512-zptv57P3GpL+O0I7VdMJNBZCu+BPHVQUk55Ft8/QCJjTVxrnJHuVuX/0Bl2A6/+2oyR/ZMEuFKwmzqqZ/U5nPQ==}
     engines: {node: 20 || >=22}
 
   joycon@3.1.1:
@@ -1867,7 +1867,7 @@ snapshots:
   '@esbuild/win32-x64@0.25.5':
     optional: true
 
-  '@eventcatalog/sdk@2.5.5':
+  '@eventcatalog/sdk@2.6.0':
     dependencies:
       '@changesets/cli': 2.29.4
       fs-extra: 11.3.0
@@ -2066,7 +2066,7 @@ snapshots:
 
   '@types/node@12.20.55': {}
 
-  '@types/node@22.15.24':
+  '@types/node@22.15.29':
     dependencies:
       undici-types: 6.21.0
 
@@ -2077,13 +2077,13 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.1.4(vite@6.3.5(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0))':
+  '@vitest/mocker@3.1.4(vite@6.3.5(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0))':
     dependencies:
       '@vitest/spy': 3.1.4
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 6.3.5(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0)
+      vite: 6.3.5(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0)
 
   '@vitest/pretty-format@3.1.4':
     dependencies:
@@ -2381,7 +2381,7 @@ snapshots:
   glob@11.0.2:
     dependencies:
       foreground-child: 3.3.1
-      jackspeak: 4.1.0
+      jackspeak: 4.1.1
       minimatch: 10.0.1
       minipass: 7.1.2
       package-json-from-dist: 1.0.1
@@ -2439,7 +2439,7 @@ snapshots:
     optionalDependencies:
       '@pkgjs/parseargs': 0.11.0
 
-  jackspeak@4.1.0:
+  jackspeak@4.1.1:
     dependencies:
       '@isaacs/cliui': 8.0.2
 
@@ -2869,13 +2869,13 @@ snapshots:
 
   universalify@2.0.1: {}
 
-  vite-node@3.1.4(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0):
+  vite-node@3.1.4(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0):
     dependencies:
       cac: 6.7.14
       debug: 4.4.1
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 6.3.5(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0)
+      vite: 6.3.5(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -2890,7 +2890,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@6.3.5(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0):
+  vite@6.3.5(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0):
     dependencies:
       esbuild: 0.25.5
       fdir: 6.4.5(picomatch@4.0.2)
@@ -2899,15 +2899,15 @@ snapshots:
       rollup: 4.41.1
       tinyglobby: 0.2.14
     optionalDependencies:
-      '@types/node': 22.15.24
+      '@types/node': 22.15.29
       fsevents: 2.3.3
       terser: 5.37.0
       yaml: 2.6.0
 
-  vitest@3.1.4(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0):
+  vitest@3.1.4(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0):
     dependencies:
       '@vitest/expect': 3.1.4
-      '@vitest/mocker': 3.1.4(vite@6.3.5(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0))
+      '@vitest/mocker': 3.1.4(vite@6.3.5(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0))
       '@vitest/pretty-format': 3.1.4
       '@vitest/runner': 3.1.4
       '@vitest/snapshot': 3.1.4
@@ -2924,11 +2924,11 @@ snapshots:
       tinyglobby: 0.2.14
       tinypool: 1.0.2
       tinyrainbow: 2.0.0
-      vite: 6.3.5(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0)
-      vite-node: 3.1.4(@types/node@22.15.24)(terser@5.37.0)(yaml@2.6.0)
+      vite: 6.3.5(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0)
+      vite-node: 3.1.4(@types/node@22.15.29)(terser@5.37.0)(yaml@2.6.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 22.15.24
+      '@types/node': 22.15.29
     transitivePeerDependencies:
       - jiti
       - less
