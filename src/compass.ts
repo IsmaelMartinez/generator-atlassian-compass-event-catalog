@@ -55,7 +55,7 @@ enum CustomFieldType {
 
 type CustomField = {
   type: CustomFieldType;
-  name: any;
+  name: string;
   value: string;
 };
 

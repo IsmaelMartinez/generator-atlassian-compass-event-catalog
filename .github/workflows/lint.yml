@@ -17,5 +17,7 @@ jobs:
           version: 8
       - name: Installation
         run: pnpm i
+      - name: ESLint
+        run: pnpm run lint
       - name: Prettier Code
         run: pnpm run format:diff
