@@ -1,11 +1,13 @@
-import { expect, Assertion, AsymmetricMatchersContaining } from 'vitest';
+import { expect } from 'vitest';
 
 interface CustomMatchers<R = unknown> {
   toMatchMarkdown: (str: string) => R;
 }
 
 declare module 'vitest' {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type
   interface Assertion<T = any> extends CustomMatchers<T> {}
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface AsymmetricMatchersContaining extends CustomMatchers {}
 }
 
@@ -13,7 +15,9 @@ declare module 'vitest' {
 const normalizeWhitespace = (str: string) => str.replace(/\s+/g, ' ').trim();
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace vitest {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     interface Assertion<T> {
       toMatchMarkdown(expected: string): void;
     }

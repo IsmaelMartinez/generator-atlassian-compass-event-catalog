@@ -6,9 +6,9 @@ import Domain from './domain';
 import { GeneratorProps } from './types';
 
 // The event.catalog.js values for your plugin
-type EventCatalogConfig = any;
+type EventCatalogConfig = Record<string, unknown>;
 
-export default async (config: EventCatalogConfig, options: GeneratorProps) => {
+export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   // This is set by EventCatalog. This is the directory where the catalog is stored
   console.log(chalk.green(`Processing ${options.services.length} Compass files...`));
 
@@ -19,7 +19,7 @@ export default async (config: EventCatalogConfig, options: GeneratorProps) => {
   const projectDir = process.env.PROJECT_DIR;
 
   if (options.debug) {
-    console.debug(chalk.magenta('Configuration provided', JSON.stringify(config)));
+    console.debug(chalk.magenta('Configuration provided', JSON.stringify(_config)));
     console.debug(chalk.magenta('Generator properties', JSON.stringify(options)));
   }
   const compassFiles = Array.isArray(options.services) ? options.services : [options.services];

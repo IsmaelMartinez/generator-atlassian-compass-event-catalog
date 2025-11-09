@@ -4,9 +4,15 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     setupFiles: ['./vitest.setup.ts'],
-    deps: {
-      inline: ['@eventcatalog/sdk'],
+    server: {
+      deps: {
+        inline: ['@eventcatalog/sdk'],
+      },
     },
-    // ... Specify options here.
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: ['dist/**', 'examples/**', '**/*.config.*', '**/test/**', 'vitest.setup.ts'],
+    },
   },
 });
