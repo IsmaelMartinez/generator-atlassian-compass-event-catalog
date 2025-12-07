@@ -13,7 +13,7 @@ importers:
         version: 2.29.8(@types/node@24.10.1)
       '@eventcatalog/sdk':
         specifier: ^2.9.0
-        version: 2.9.2(@types/node@24.10.1)
+        version: 2.9.5(@types/node@24.10.1)
       chalk:
         specifier: ^5.6.2
         version: 5.6.2
@@ -506,8 +506,8 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@eventcatalog/sdk@2.9.2':
-    resolution: {integrity: sha512-gQJqO0yBFZfM7819Jj5oHGtF8tYKZ2lp76/mgo4pjgWID/Hg1Eb2ORTgUZX8FIbkXZfj3dJPHAh1Qm3qad+KMQ==}
+  '@eventcatalog/sdk@2.9.5':
+    resolution: {integrity: sha512-WCJ+uWABVetr2rY6009005IKJiuRFpOISBoxbL4Cd0i69M6r02ELO0D/tr+oyZlGeTbRPgFnZBP+TyguqNBCDg==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1426,8 +1426,8 @@ packages:
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
 
-  lru-cache@11.2.2:
-    resolution: {integrity: sha512-F9ODfyqML2coTIsQpSkRHnLSZMtkU8Q+mSfcaIyKwy58u+8k5nvAYeiNhsyMARvzNcXJ9QfWVrcPsC9e9rAxtg==}
+  lru-cache@11.2.4:
+    resolution: {integrity: sha512-B5Y16Jr9LB9dHVkh6ZevG+vAbOsNOYCX+sXvFWFu7B3Iz5mijW3zdbMyhsh8ANd2mSWBYdJgnqi+mL7/LrOPYg==}
     engines: {node: 20 || >=22}
 
   magic-string@0.30.21:
@@ -2383,7 +2383,7 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@eventcatalog/sdk@2.9.2(@types/node@24.10.1)':
+  '@eventcatalog/sdk@2.9.5(@types/node@24.10.1)':
     dependencies:
       '@changesets/cli': 2.29.8(@types/node@24.10.1)
       fs-extra: 11.3.2
@@ -3364,7 +3364,7 @@ snapshots:
 
   lru-cache@10.4.3: {}
 
-  lru-cache@11.2.2: {}
+  lru-cache@11.2.4: {}
 
   magic-string@0.30.21:
     dependencies:
@@ -3488,7 +3488,7 @@ snapshots:
 
   path-scurry@2.0.1:
     dependencies:
-      lru-cache: 11.2.2
+      lru-cache: 11.2.4
       minipass: 7.1.2
 
   path-type@4.0.0: {}
