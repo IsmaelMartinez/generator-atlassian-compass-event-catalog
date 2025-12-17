@@ -13,7 +13,7 @@ importers:
         version: 2.29.8(@types/node@25.0.2)
       '@eventcatalog/sdk':
         specifier: ^2.9.0
-        version: 2.9.5(@types/node@25.0.2)
+        version: 2.9.9(@types/node@25.0.2)
       chalk:
         specifier: ^5.6.2
         version: 5.6.2
@@ -506,8 +506,8 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@eventcatalog/sdk@2.9.5':
-    resolution: {integrity: sha512-WCJ+uWABVetr2rY6009005IKJiuRFpOISBoxbL4Cd0i69M6r02ELO0D/tr+oyZlGeTbRPgFnZBP+TyguqNBCDg==}
+  '@eventcatalog/sdk@2.9.9':
+    resolution: {integrity: sha512-rSEB5BCIlNnyixcn1dP1MyNiNoL7QHBol5uCwvDM4kmzhXfFCv/xlRMXWOR9F+Bix0FwlNbIjD4BMDETYDIi3A==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1694,11 +1694,6 @@ packages:
     resolution: {integrity: sha512-vfD3pmTzGpufjScBh50YHKzEu2lxBWhVEHsNGoEXmCmn2hKGfeNLYMzCJpe8cD7gqX7TJluOVpBkAequ6dgMmA==}
     engines: {node: '>=4'}
 
-  semver@7.6.3:
-    resolution: {integrity: sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==}
-    engines: {node: '>=10'}
-    hasBin: true
-
   semver@7.7.3:
     resolution: {integrity: sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==}
     engines: {node: '>=10'}
@@ -2383,14 +2378,14 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@eventcatalog/sdk@2.9.5(@types/node@25.0.2)':
+  '@eventcatalog/sdk@2.9.9(@types/node@25.0.2)':
     dependencies:
       '@changesets/cli': 2.29.8(@types/node@25.0.2)
       fs-extra: 11.3.2
       glob: 11.1.0
       gray-matter: 4.0.3
       proper-lockfile: 4.1.2
-      semver: 7.6.3
+      semver: 7.7.3
       slugify: 1.6.6
     transitivePeerDependencies:
       - '@types/node'
@@ -3608,8 +3603,6 @@ snapshots:
     dependencies:
       extend-shallow: 2.0.1
       kind-of: 6.0.3
-
-  semver@7.6.3: {}
 
   semver@7.7.3: {}
 
