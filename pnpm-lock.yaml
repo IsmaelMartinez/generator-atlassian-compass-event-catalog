@@ -13,7 +13,7 @@ importers:
         version: 2.29.8(@types/node@25.0.6)
       '@eventcatalog/sdk':
         specifier: ^2.9.0
-        version: 2.9.11(@types/node@25.0.6)
+        version: 2.10.0(@types/node@25.0.6)
       chalk:
         specifier: ^5.6.2
         version: 5.6.2
@@ -512,8 +512,8 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@eventcatalog/sdk@2.9.11':
-    resolution: {integrity: sha512-mws5juD27+DSyppGIKw9H8p1QA7vqp39inQa22GNReYSqQE6Zt0wpMSyY2in30pPHxKhQ2Y+63gmr1K4crIi6Q==}
+  '@eventcatalog/sdk@2.10.0':
+    resolution: {integrity: sha512-uN5yC6f1vV1L9/IYaeI3t0o6mWg40ym6JbwQcf05ioG9i6uS9oKe9X0YgulcyRZm+nE/tt0zxKwlKcX+vUyD5Q==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -2386,7 +2386,7 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@eventcatalog/sdk@2.9.11(@types/node@25.0.6)':
+  '@eventcatalog/sdk@2.10.0(@types/node@25.0.6)':
     dependencies:
       '@changesets/cli': 2.29.8(@types/node@25.0.6)
       fs-extra: 11.3.3
