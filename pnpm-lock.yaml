@@ -13,7 +13,7 @@ importers:
         version: 2.29.8(@types/node@25.2.0)
       '@eventcatalog/sdk':
         specifier: ^2.9.0
-        version: 2.12.0(@types/node@25.2.0)
+        version: 2.12.1(@types/node@25.2.0)
       chalk:
         specifier: ^5.6.2
         version: 5.6.2
@@ -512,8 +512,8 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@eventcatalog/sdk@2.12.0':
-    resolution: {integrity: sha512-gFsi1iGMWCFsidGH3o2LfsXxUoip+Rq62gfhgafufnyss0f+XkdoKqou03Lo/P7bx0SurIt9AOgLc11XgWcrPg==}
+  '@eventcatalog/sdk@2.12.1':
+    resolution: {integrity: sha512-N/Xz1jniwwUyq9tb97VXmLj0FJrULqnSZVtLBqhOaJUSJkfwnu4WIoeQN5eDK2cVYVi812eBR3xKfCNbErCiJw==}
     hasBin: true
 
   '@humanfs/core@0.19.1':
@@ -2361,7 +2361,7 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@eventcatalog/sdk@2.12.0(@types/node@25.2.0)':
+  '@eventcatalog/sdk@2.12.1(@types/node@25.2.0)':
     dependencies:
       '@changesets/cli': 2.29.8(@types/node@25.2.0)
       commander: 12.1.0
