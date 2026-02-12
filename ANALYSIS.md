@@ -41,7 +41,7 @@ It does **not** call the Compass API. It reads local YAML files only.
 
 2. **Only `SERVICE` type is supported.** Compass has 10+ component types (APPLICATION, LIBRARY, CAPABILITY, CLOUD_RESOURCE, DATA_PIPELINE, etc.) plus custom types. The generator throws an error on anything that isn't SERVICE.
 
-3. **No relationship mapping.** Compass YAML has `relationships.DEPENDS_ON` but the generator ignores it. EventCatalog SDK has `addRelationshipToService()` that could map these dependencies.
+3. **No relationship mapping.** Compass YAML has `relationships.DEPENDS_ON` but the generator ignores it. Dependencies could be expressed through service markdown and the `<NodeGraph />` visualization.
 
 4. **Never updates existing services.** Once a service exists, it's skipped entirely. If Compass data changes (description, links, team), the EventCatalog service goes stale.
 
@@ -102,8 +102,8 @@ The Compass GraphQL API supports:
 #### Phase 3: Relationship Mapping (medium effort)
 
 - Parse `relationships.DEPENDS_ON` from YAML
-- Use SDK's `addRelationshipToService()` to create dependency links
-- This is what makes EventCatalog's NodeGraph visualization actually useful
+- Express dependencies in service markdown and leverage `<NodeGraph />` visualization
+- This is what makes EventCatalog's architecture diagrams actually useful
 
 #### Phase 4: Compass API Integration (high effort, highest value)
 

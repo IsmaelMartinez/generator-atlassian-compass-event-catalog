@@ -196,28 +196,55 @@ relationships:
     - 'ari:cloud:compass:...'
 ```
 
-The SDK has `addEventToService(id, direction, event, version?)` and services can have `sends`/`receives` pointers. But more relevantly, the `writeService` call can include relationships via the markdown `<NodeGraph />` component that EventCatalog renders.
+**Important**: The SDK does **not** have a generic `addRelationshipToService()` function. The SDK models relationships through specific mechanisms:
 
-**Approach**: For each service, after writing it, use `addServiceToDomain` or build the relationship through the service's properties. The most practical approach:
+- `sends` / `receives` — for message flows (events, commands, queries between services via channels)
+- `writesTo` / `readsFrom` — for data store relationships
+- `<NodeGraph />` — renders the service/domain graph visually in markdown
+
+Compass `DEPENDS_ON` is a general architectural dependency, not a message flow. It doesn't map cleanly to `sends`/`receives` (which are for events/commands, not service-to-service dependencies). Using `addEventToService()` would be incorrect here — that function is for linking events to services, not for expressing that one service depends on another.
+
+**Approach**: Express dependencies through the service markdown and the domain's `<NodeGraph />`. The `<NodeGraph />` component already renders all services within a domain and their connections. We enrich each service's markdown with an explicit "Dependencies" section listing what it depends on, and ensure both services are in the same domain so the graph visualizes the relationship.
 
 1. Collect all service IDs being processed in a Map (Compass ARN → EventCatalog ID)
-2. After all services are written, iterate relationships
-3. For each `DEPENDS_ON`, if the target exists in our map, use the SDK to link them
+2. For each service, resolve its `DEPENDS_ON` ARNs to EventCatalog service IDs
+3. Include the dependency list in the service's generated markdown
+4. If both services are in the same domain, the `<NodeGraph />` will show them together
+
+**File**: `src/service.ts`
+
+Add a dependencies section to the generated markdown:
+
+```ts
+// In defaultMarkdown(), add after links section:
+const dependencyLinks = dependencies
+  ?.map((dep) => `* [${dep.name}](/docs/services/${dep.id})`)
+  .join('\n');
+
+// Include in markdown:
+## Dependencies
+${dependencyLinks || 'No known dependencies.'}
+```
 
 **File**: `src/index.ts`
 
+Build the service map and resolve dependencies before generating markdown:
+
 ```ts
-// After all services are created, process relationships
-for (const [compassArn, { serviceId, config }] of serviceMap) {
-  const dependsOn = config.relationships?.DEPENDS_ON || [];
-  for (const dep of dependsOn) {
-    const target = serviceMap.get(dep);
-    if (target) {
-      // The NodeGraph in EventCatalog visualizes these relationships
-      // We can add them via markdown or via SDK relationship functions
-      console.log(chalk.cyan(` - ${serviceId} depends on ${target.serviceId}`));
-    }
-  }
+// First pass: collect all services into a map
+const serviceMap = new Map<string, { serviceId: string; config: CompassConfig }>();
+for (const file of compassFiles) {
+  const config = loadConfig(file.path);
+  serviceMap.set(config.id || '', { serviceId: file.id || config.name, config });
+}
+
+// Second pass: write services with resolved dependencies
+for (const file of compassFiles) {
+  const config = loadConfig(file.path);
+  const dependencies = (config.relationships?.DEPENDS_ON || []).map((arn) => serviceMap.get(arn)).filter(Boolean);
+
+  const service = loadService(config, compassUrl, file.version, file.id, dependencies);
+  await writeService(service);
 }
 ```
 
@@ -288,7 +315,33 @@ export type GeneratorProps = {
 };
 ```
 
-### 4.3 — Update main generator to support both modes
+### 4.3 — Update Zod schema for services-or-api validation
+
+**File**: `src/validation.ts`
+
+The Phase 1 Zod schema requires `services` as a mandatory array. With API mode, either `services` or `api` must be provided, but not both. Update the schema using `.refine()` to enforce this:
+
+```ts
+export const GeneratorPropsSchema = z
+  .object({
+    services: z.array(ServiceOptionsSchema).optional(),
+    api: ApiConfigSchema.optional(),
+    compassUrl: z.string().url('compassUrl must be a valid URL'),
+    domain: DomainOptionSchema.optional(),
+    debug: z.boolean().optional(),
+    overrideExisting: z.boolean().optional(),
+  })
+  .refine((data) => data.services || data.api, {
+    message: 'Either "services" (YAML mode) or "api" (API mode) must be provided',
+  })
+  .refine((data) => !(data.services && data.api), {
+    message: 'Cannot use both "services" and "api" — choose one mode',
+  });
+```
+
+This ensures clear error messages when users misconfigure the generator.
+
+### 4.4 — Update main generator to support both modes
 
 **File**: `src/index.ts`
 
@@ -307,11 +360,11 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
 };
 ```
 
-### 4.4 — Handle API pagination
+### 4.5 — Handle API pagination
 
 The Compass GraphQL API uses cursor-based pagination. `searchComponents` returns `pageInfo { hasNextPage, endCursor }`. The client must loop until `hasNextPage` is false.
 
-### 4.5 — Environment variable support for secrets
+### 4.6 — Environment variable support for secrets
 
 Never hardcode API tokens. Support env var references:
 
@@ -327,7 +380,7 @@ function resolveValue(value: string): string {
 }
 ```
 
-### 4.6 — Tests for Phase 4
+### 4.7 — Tests for Phase 4
 
 - Mock the GraphQL endpoint (use `msw` or simple fetch mock)
 - Test that API mode fetches and processes components
