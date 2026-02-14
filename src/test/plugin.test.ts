@@ -275,8 +275,10 @@ describe('Atlassian Compass generator tests', () => {
     expect(service).not.toBeDefined();
   });
 
-  describe('service badges', () => {
-    it('generates lifecycle badge from fields.lifecycle', async () => {
+  describe('service badges and metadata', () => {
+    let service: Awaited<ReturnType<ReturnType<typeof utils>['getService']>>;
+
+    beforeEach(async () => {
       const { getService } = utils(catalogDir);
 
       await plugin(eventCatalogConfig, {
@@ -284,7 +286,10 @@ describe('Atlassian Compass generator tests', () => {
         compassUrl: 'https://compass.atlassian.com',
       });
 
-      const service = await getService('my-service');
+      service = await getService('my-service');
+    });
+
+    it('generates lifecycle badge from fields.lifecycle', () => {
       expect(service).toBeDefined();
       expect(service.badges).toContainEqual({
         content: 'Active',
@@ -293,15 +298,7 @@ describe('Atlassian Compass generator tests', () => {
       });
     });
 
-    it('generates tier badge from fields.tier', async () => {
-      const { getService } = utils(catalogDir);
-
-      await plugin(eventCatalogConfig, {
-        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
-        compassUrl: 'https://compass.atlassian.com',
-      });
-
-      const service = await getService('my-service');
+    it('generates tier badge from fields.tier', () => {
       expect(service).toBeDefined();
       expect(service.badges).toContainEqual({
         content: 'Tier 1',
@@ -310,15 +307,7 @@ describe('Atlassian Compass generator tests', () => {
       });
     });
 
-    it('generates one badge per label', async () => {
-      const { getService } = utils(catalogDir);
-
-      await plugin(eventCatalogConfig, {
-        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
-        compassUrl: 'https://compass.atlassian.com',
-      });
-
-      const service = await getService('my-service');
+    it('generates one badge per label', () => {
       expect(service).toBeDefined();
       expect(service.badges).toContainEqual({
         content: 'foo:bar',
@@ -331,31 +320,13 @@ describe('Atlassian Compass generator tests', () => {
         textColor: '#374151',
       });
     });
-  });
 
-  describe('service metadata', () => {
-    it('maps repository link to service repository', async () => {
-      const { getService } = utils(catalogDir);
-
-      await plugin(eventCatalogConfig, {
-        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
-        compassUrl: 'https://compass.atlassian.com',
-      });
-
-      const service = await getService('my-service');
+    it('maps repository link to service repository', () => {
       expect(service).toBeDefined();
       expect(service.repository).toEqual({ url: 'https://www.example.com/repos/my-service-repo' });
     });
 
-    it('maps ownerId to service owners', async () => {
-      const { getService } = utils(catalogDir);
-
-      await plugin(eventCatalogConfig, {
-        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
-        compassUrl: 'https://compass.atlassian.com',
-      });
-
-      const service = await getService('my-service');
+    it('maps ownerId to service owners', () => {
       expect(service).toBeDefined();
       expect(service.owners).toEqual(['00000000-0000-0000-0000-000000000000']);
     });

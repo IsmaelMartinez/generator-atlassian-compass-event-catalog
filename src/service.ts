@@ -1,6 +1,24 @@
 import { CompassConfig } from './compass';
 import { Service, Badge } from './types';
 
+// Sanitize text for safe markdown embedding: escape brackets and parentheses
+function sanitizeMarkdownText(text: string): string {
+  return text.replace(/[[\]()]/g, (char) => `\\${char}`);
+}
+
+// Sanitize URL for safe markdown link embedding: only allow http/https protocols
+function sanitizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return url.replace(/[()]/g, (char) => encodeURIComponent(char));
+    }
+    return '';
+  } catch {
+    return '';
+  }
+}
+
 enum UrlTypeToIcon {
   CHAT_CHANNEL = '💬',
   DOCUMENT = '📖',
@@ -68,16 +86,27 @@ function getOwners(config: CompassConfig): string[] {
 }
 
 export const defaultMarkdown = (config: CompassConfig, compassComponentUrl?: string, compassTeamUrl?: string) => {
+  const safeComponentUrl = compassComponentUrl ? sanitizeUrl(compassComponentUrl) : '';
+  const safeTeamUrl = compassTeamUrl ? sanitizeUrl(compassTeamUrl) : '';
+
+  const linkLines = config.links
+    ?.filter((link) => link.name)
+    .map((link) => {
+      const safeName = sanitizeMarkdownText(link.name || '');
+      const safeUrl = sanitizeUrl(link.url);
+      if (!safeUrl) return null;
+      return `* ${UrlTypeToIcon[link.type]} [${safeName}](${safeUrl})`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
   return `
 
 ## Links
 
-* 🧭 [Compass Component](${compassComponentUrl})
-* 🪂 [Compass Team](${compassTeamUrl})
-${config.links
-  ?.filter((link) => link.name)
-  .map((link) => `* ${UrlTypeToIcon[link.type]} [${link.name}](${link.url})`)
-  .join('\n')}
+* 🧭 [Compass Component](${safeComponentUrl})
+* 🪂 [Compass Team](${safeTeamUrl})
+${linkLines}
 
 ## Architecture diagram
 

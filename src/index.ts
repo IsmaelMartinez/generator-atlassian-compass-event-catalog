@@ -6,6 +6,11 @@ import Domain from './domain';
 import { GeneratorProps } from './types';
 import { GeneratorPropsSchema } from './validation';
 
+// Sanitize IDs to prevent path traversal from untrusted sources
+function sanitizeId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9-_]/g, '-');
+}
+
 // The event.catalog.js values for your plugin
 type EventCatalogConfig = Record<string, unknown>;
 
@@ -47,14 +52,15 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
 
     console.log(chalk.blue(`\nProcessing service: ${compassConfig.name}`));
 
+    const serviceId = sanitizeId(file.id || compassConfig.name);
+
     if (domain) {
       // Add the service to the domain
-      await domain.addServiceToDomain(file.id || compassConfig.name, file.version);
+      await domain.addServiceToDomain(serviceId, file.version);
     }
 
-    const serviceId = file.id || compassConfig.name;
     const existing = await getService(serviceId);
-    const compassService = loadService(compassConfig, options.compassUrl.replace(/\/$/, ''), file.version, file.id);
+    const compassService = loadService(compassConfig, options.compassUrl.replace(/\/$/, ''), file.version, serviceId);
 
     if (existing && options.overrideExisting !== false) {
       await writeService(compassService, { override: true });
