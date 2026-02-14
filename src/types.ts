@@ -1,3 +1,5 @@
+import type { Service, Badge } from '@eventcatalog/sdk';
+
 type ServiceOptions = {
   id?: string;
   path: string;
@@ -7,10 +9,10 @@ type ServiceOptions = {
 // Configuration the users give your catalog
 export type GeneratorProps = {
   services: ServiceOptions[];
-  // path: string | string[];
   compassUrl: string;
   domain?: DomainOption;
   debug?: boolean;
+  overrideExisting?: boolean;
 };
 
 export type DomainOption = {
@@ -19,10 +21,5 @@ export type DomainOption = {
   version: string;
 };
 
-export type Service = {
-  id: string;
-  name: string;
-  version: string;
-  summary: string;
-  markdown: string;
-};
+// Re-export SDK types for convenience
+export type { Service, Badge };

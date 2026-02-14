@@ -4,11 +4,15 @@ import { loadConfig, CompassConfig } from './compass';
 import { loadService } from './service';
 import Domain from './domain';
 import { GeneratorProps } from './types';
+import { GeneratorPropsSchema } from './validation';
 
 // The event.catalog.js values for your plugin
 type EventCatalogConfig = Record<string, unknown>;
 
 export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
+  // Validate configuration
+  GeneratorPropsSchema.parse(options);
+
   // This is set by EventCatalog. This is the directory where the catalog is stored
   console.log(chalk.green(`Processing ${options.services.length} Compass files...`));
 
@@ -47,14 +51,19 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
       // Add the service to the domain
       await domain.addServiceToDomain(file.id || compassConfig.name, file.version);
     }
-    const service = await getService(file.id || compassConfig.name);
 
-    if (!service) {
-      const compassService = loadService(compassConfig, options.compassUrl.replace(/\/$/, ''), file.version, file.id);
+    const serviceId = file.id || compassConfig.name;
+    const existing = await getService(serviceId);
+    const compassService = loadService(compassConfig, options.compassUrl.replace(/\/$/, ''), file.version, file.id);
+
+    if (existing && options.overrideExisting !== false) {
+      await writeService(compassService, { override: true });
+      console.log(chalk.cyan(` - Service ${compassConfig.name} updated`));
+    } else if (!existing) {
       await writeService(compassService);
-      console.log(chalk.cyan(` - Service ${compassConfig.name} created!`));
+      console.log(chalk.cyan(` - Service ${compassConfig.name} created`));
     } else {
-      console.log(chalk.yellow(` - Service ${compassConfig.name} already exists, skipped creation...`));
+      console.log(chalk.yellow(` - Service ${compassConfig.name} skipped (already exists)`));
     }
   }
   console.log(chalk.green(`\nFinished generating event catalog for the Compass files provided!`));
