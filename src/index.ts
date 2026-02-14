@@ -46,11 +46,17 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   for (const file of compassFiles) {
     const compassConfig: CompassConfig = loadConfig(file.path);
 
-    if (compassConfig.typeId !== 'SERVICE') {
-      throw new Error('Only SERVICE type is supported');
+    // If typeFilter is set, skip components whose typeId is not in the list
+    if (options.typeFilter && options.typeFilter.length > 0) {
+      if (!compassConfig.typeId || !options.typeFilter.includes(compassConfig.typeId)) {
+        console.log(
+          chalk.yellow(`\nSkipping ${compassConfig.name} (type ${compassConfig.typeId || 'unknown'} not in typeFilter)`)
+        );
+        continue;
+      }
     }
 
-    console.log(chalk.blue(`\nProcessing service: ${compassConfig.name}`));
+    console.log(chalk.blue(`\nProcessing component: ${compassConfig.name} (type: ${compassConfig.typeId || 'unknown'})`));
 
     const serviceId = sanitizeId(file.id || compassConfig.name);
 

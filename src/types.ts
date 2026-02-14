@@ -13,6 +13,7 @@ export type GeneratorProps = {
   domain?: DomainOption;
   debug?: boolean;
   overrideExisting?: boolean;
+  typeFilter?: string[];
 };
 
 export type DomainOption = {

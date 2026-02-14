@@ -1,0 +1,15 @@
+configVersion: 1
+name: my-capability
+id: 'ari:cloud:compass:a0000000-b000-c000-d000-e00000000000:component/33333333-3333-3333-3333-333333333333/33333333-3333-3333-3333-333333333333'
+description: This is a sample capability component in Compass.
+ownerId: 'ari:cloud:teams::team/00000000-0000-0000-0000-000000000000'
+typeId: CAPABILITY
+fields:
+  tier: 1
+  lifecycle: Pre-release
+links:
+  - name: Capability repository
+    type: REPOSITORY
+    url: 'https://www.example.com/repos/my-capability-repo'
+labels:
+  - platform

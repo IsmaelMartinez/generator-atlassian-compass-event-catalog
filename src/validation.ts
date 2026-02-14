@@ -18,4 +18,5 @@ export const GeneratorPropsSchema = z.object({
   domain: DomainOptionSchema.optional(),
   debug: z.boolean().optional(),
   overrideExisting: z.boolean().optional(),
+  typeFilter: z.array(z.string().min(1)).optional(),
 });

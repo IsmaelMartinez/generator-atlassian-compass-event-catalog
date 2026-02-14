@@ -45,6 +45,14 @@ const tierColors: Record<number, { backgroundColor: string; textColor: string }>
 function buildBadges(config: CompassConfig): Badge[] {
   const badges: Badge[] = [];
 
+  if (config.typeId) {
+    badges.push({
+      content: config.typeId,
+      backgroundColor: '#6366f1',
+      textColor: '#fff',
+    });
+  }
+
   if (config.fields?.lifecycle) {
     const colors = lifecycleColors[config.fields.lifecycle] || { backgroundColor: '#6b7280', textColor: '#fff' };
     badges.push({

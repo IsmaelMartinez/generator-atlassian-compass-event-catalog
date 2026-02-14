@@ -1,0 +1,15 @@
+configVersion: 1
+name: my-application
+id: 'ari:cloud:compass:a0000000-b000-c000-d000-e00000000000:component/11111111-1111-1111-1111-111111111111/11111111-1111-1111-1111-111111111111'
+description: This is a sample application component in Compass.
+ownerId: 'ari:cloud:teams::team/00000000-0000-0000-0000-000000000000'
+typeId: APPLICATION
+fields:
+  tier: 2
+  lifecycle: Active
+links:
+  - name: Service repository
+    type: REPOSITORY
+    url: 'https://www.example.com/repos/my-application-repo'
+labels:
+  - frontend

@@ -1,0 +1,15 @@
+configVersion: 1
+name: my-library
+id: 'ari:cloud:compass:a0000000-b000-c000-d000-e00000000000:component/22222222-2222-2222-2222-222222222222/22222222-2222-2222-2222-222222222222'
+description: This is a sample library component in Compass.
+ownerId: 'ari:cloud:teams::team/00000000-0000-0000-0000-000000000000'
+typeId: LIBRARY
+fields:
+  tier: 3
+  lifecycle: Active
+links:
+  - name: Library repository
+    type: REPOSITORY
+    url: 'https://www.example.com/repos/my-library-repo'
+labels:
+  - shared
