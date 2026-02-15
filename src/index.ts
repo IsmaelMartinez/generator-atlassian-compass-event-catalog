@@ -43,27 +43,11 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
     await domain.processDomain();
   }
 
-  // First pass: collect all services into a map (Compass ARN → service info)
-  // This allows resolving DEPENDS_ON relationships between services
-  const serviceMap = new Map<string, { serviceId: string; name: string; config: CompassConfig }>();
+  // First pass: load all configs, apply typeFilter, and collect into a map (Compass ARN → service info)
+  // This allows resolving DEPENDS_ON relationships between services and avoids parsing YAML twice
+  const serviceMap = new Map<string, { serviceId: string; name: string }>();
+  const processableFiles: { file: (typeof compassFiles)[number]; config: CompassConfig; serviceId: string }[] = [];
 
-  for (const file of compassFiles) {
-    const compassConfig: CompassConfig = loadConfig(file.path);
-
-    // If typeFilter is set, skip components whose typeId is not in the list
-    if (options.typeFilter && options.typeFilter.length > 0) {
-      if (!compassConfig.typeId || !options.typeFilter.includes(compassConfig.typeId)) {
-        continue;
-      }
-    }
-
-    const serviceId = sanitizeId(file.id || compassConfig.name);
-    if (compassConfig.id) {
-      serviceMap.set(compassConfig.id, { serviceId, name: compassConfig.name, config: compassConfig });
-    }
-  }
-
-  // Second pass: write services with resolved dependencies
   for (const file of compassFiles) {
     const compassConfig: CompassConfig = loadConfig(file.path);
 
@@ -77,9 +61,16 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
       }
     }
 
-    console.log(chalk.blue(`\nProcessing component: ${compassConfig.name} (type: ${compassConfig.typeId || 'unknown'})`));
-
     const serviceId = sanitizeId(file.id || compassConfig.name);
+    if (compassConfig.id) {
+      serviceMap.set(compassConfig.id, { serviceId, name: compassConfig.name });
+    }
+    processableFiles.push({ file, config: compassConfig, serviceId });
+  }
+
+  // Second pass: write services with resolved dependencies
+  for (const { file, config: compassConfig, serviceId } of processableFiles) {
+    console.log(chalk.blue(`\nProcessing component: ${compassConfig.name} (type: ${compassConfig.typeId || 'unknown'})`));
 
     if (domain) {
       // Add the service to the domain
