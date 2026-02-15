@@ -25,6 +25,7 @@ const expectedMarkdown = `## Links
 <NodeGraph />`;
 
 const expectedBadges = [
+  { content: 'SERVICE', backgroundColor: '#6366f1', textColor: '#fff' },
   { content: 'Active', backgroundColor: '#22c55e', textColor: '#fff' },
   { content: 'Tier 1', backgroundColor: '#3b82f6', textColor: '#fff' },
   { content: 'foo:bar', backgroundColor: '#e5e7eb', textColor: '#374151' },
@@ -242,37 +243,207 @@ describe('Atlassian Compass generator tests', () => {
     });
   });
 
-  it('does not create a service if the typeId is not SERVICE', async () => {
-    const { getService, getDomain } = utils(catalogDir);
-    // Create the domain and service
-    await expect(
-      plugin(eventCatalogConfig, {
-        services: [{ path: join(__dirname, 'my-other-compass.notsupported.yml') }],
+  describe('all Compass component types', () => {
+    it('processes APPLICATION type components', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-application-compass.yml') }],
         compassUrl: 'https://compass.atlassian.com',
-        domain: {
-          id: 'my-domain',
-          name: 'My Domain',
-          version: '0.0.1',
-        },
-      })
-    ).rejects.toThrow('Only SERVICE type is supported');
+      });
 
-    // Validate the domain is created
-    const domain = await getDomain('my-domain', '0.0.1');
-    expect(domain).toBeDefined();
-
-    expect(domain).toEqual({
-      id: 'my-domain',
-      markdown: `## Architecture diagram
-  <NodeGraph />`,
-      name: 'My Domain',
-      version: '0.0.1',
+      const service = await getService('my-application');
+      expect(service).toBeDefined();
+      expect(service.name).toBe('my-application');
+      expect(service.summary).toBe('This is a sample application component in Compass.');
     });
 
-    // Check that the service is not created
+    it('processes LIBRARY type components', async () => {
+      const { getService } = utils(catalogDir);
 
-    const service = await getService('my-service');
-    expect(service).not.toBeDefined();
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-library-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-library');
+      expect(service).toBeDefined();
+      expect(service.name).toBe('my-library');
+      expect(service.summary).toBe('This is a sample library component in Compass.');
+    });
+
+    it('processes CAPABILITY type components', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-capability-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-capability');
+      expect(service).toBeDefined();
+      expect(service.name).toBe('my-capability');
+      expect(service.summary).toBe('This is a sample capability component in Compass.');
+    });
+
+    it('processes OTHER type components (previously rejected)', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-other-compass.notsupported.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-other-component');
+      expect(service).toBeDefined();
+      expect(service.name).toBe('my-other-component');
+    });
+
+    it('processes multiple component types together', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-service-compass.yml') },
+          { path: join(__dirname, 'my-application-compass.yml') },
+          { path: join(__dirname, 'my-library-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const svc = await getService('my-service');
+      const app = await getService('my-application');
+      const lib = await getService('my-library');
+      expect(svc).toBeDefined();
+      expect(app).toBeDefined();
+      expect(lib).toBeDefined();
+    });
+  });
+
+  describe('component type badge for non-SERVICE types', () => {
+    it('adds APPLICATION badge for APPLICATION type', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-application-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-application');
+      expect(service).toBeDefined();
+      expect(service.badges).toContainEqual({
+        content: 'APPLICATION',
+        backgroundColor: '#6366f1',
+        textColor: '#fff',
+      });
+    });
+
+    it('adds LIBRARY badge for LIBRARY type', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-library-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-library');
+      expect(service).toBeDefined();
+      expect(service.badges).toContainEqual({
+        content: 'LIBRARY',
+        backgroundColor: '#6366f1',
+        textColor: '#fff',
+      });
+    });
+
+    it('adds CAPABILITY badge for CAPABILITY type', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-capability-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-capability');
+      expect(service).toBeDefined();
+      expect(service.badges).toContainEqual({
+        content: 'CAPABILITY',
+        backgroundColor: '#6366f1',
+        textColor: '#fff',
+      });
+    });
+  });
+
+  describe('typeFilter', () => {
+    it('only processes components matching typeFilter', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-service-compass.yml') },
+          { path: join(__dirname, 'my-application-compass.yml') },
+          { path: join(__dirname, 'my-library-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+        typeFilter: ['SERVICE', 'APPLICATION'],
+      });
+
+      const svc = await getService('my-service');
+      const app = await getService('my-application');
+      const lib = await getService('my-library');
+      expect(svc).toBeDefined();
+      expect(app).toBeDefined();
+      expect(lib).not.toBeDefined();
+    });
+
+    it('excludes components not in typeFilter', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }, { path: join(__dirname, 'my-application-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        typeFilter: ['APPLICATION'],
+      });
+
+      const svc = await getService('my-service');
+      const app = await getService('my-application');
+      expect(svc).not.toBeDefined();
+      expect(app).toBeDefined();
+    });
+
+    it('processes all types when typeFilter is not set', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-service-compass.yml') },
+          { path: join(__dirname, 'my-application-compass.yml') },
+          { path: join(__dirname, 'my-library-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const svc = await getService('my-service');
+      const app = await getService('my-application');
+      const lib = await getService('my-library');
+      expect(svc).toBeDefined();
+      expect(app).toBeDefined();
+      expect(lib).toBeDefined();
+    });
+
+    it('processes all types when typeFilter is empty array', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }, { path: join(__dirname, 'my-application-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        typeFilter: [],
+      });
+
+      const svc = await getService('my-service');
+      const app = await getService('my-application');
+      expect(svc).toBeDefined();
+      expect(app).toBeDefined();
+    });
   });
 
   describe('service badges and metadata', () => {
@@ -287,6 +458,15 @@ describe('Atlassian Compass generator tests', () => {
       });
 
       service = await getService('my-service');
+    });
+
+    it('generates component type badge from typeId', () => {
+      expect(service).toBeDefined();
+      expect(service.badges).toContainEqual({
+        content: 'SERVICE',
+        backgroundColor: '#6366f1',
+        textColor: '#fff',
+      });
     });
 
     it('generates lifecycle badge from fields.lifecycle', () => {
