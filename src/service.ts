@@ -1,9 +1,15 @@
 import { CompassConfig } from './compass';
 import { Service, Badge, ResolvedDependency } from './types';
 
-// Sanitize text for safe markdown embedding: escape brackets and parentheses
+// Sanitize text for safe markdown/MDX embedding: escape HTML special chars and markdown link syntax
 function sanitizeMarkdownText(text: string): string {
-  return text.replace(/[[\]()]/g, (char) => `\\${char}`);
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/[[\]()]/g, (char) => `\\${char}`);
 }
 
 // Sanitize URL for safe markdown link embedding: only allow http/https protocols
