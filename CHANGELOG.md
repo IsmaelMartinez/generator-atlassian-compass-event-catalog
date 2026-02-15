@@ -1,5 +1,22 @@
 # @ismaelmartinez/generator-atlassian-compass-event-catalog
 
+## 0.1.0
+
+### Minor Changes
+
+- d3f5ee0: Modernize and fix core gaps (Phase 1)
+  - Replace local Service type with SDK's Service type for richer metadata support
+  - Map Compass lifecycle, tier, and labels to EventCatalog badges
+  - Map Compass repository links to service repository URL
+  - Map Compass ownerId to service owners
+  - Support updating existing services with overrideExisting option (defaults to true)
+  - Add Zod validation for generator configuration with clear error messages
+
+- 26590b0: Support all Compass component types (Phase 2)
+  - Remove SERVICE-only restriction — all Compass types (APPLICATION, LIBRARY, CAPABILITY, CLOUD_RESOURCE, DATA_PIPELINE, MACHINE_LEARNING_MODEL, OTHER, UI_ELEMENT, WEBSITE) are now processed as EventCatalog services
+  - Add `typeFilter` option to selectively process only specified component types
+  - Add component type badge showing the Compass type (e.g. APPLICATION, LIBRARY) on each service
+
 ## 0.0.9
 
 ### Patch Changes
