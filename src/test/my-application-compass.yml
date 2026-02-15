@@ -13,3 +13,6 @@ links:
     url: 'https://www.example.com/repos/my-application-repo'
 labels:
   - frontend
+relationships:
+  DEPENDS_ON:
+    - 'ari:cloud:compass:a0000000-b000-c000-d000-e00000000000:component/22222222-2222-2222-2222-222222222222/22222222-2222-2222-2222-222222222222'

@@ -22,5 +22,10 @@ export type DomainOption = {
   version: string;
 };
 
+export type ResolvedDependency = {
+  id: string;
+  name: string;
+};
+
 // Re-export SDK types for convenience
 export type { Service, Badge };

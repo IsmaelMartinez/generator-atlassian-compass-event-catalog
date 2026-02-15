@@ -1,9 +1,15 @@
 import { CompassConfig } from './compass';
-import { Service, Badge } from './types';
+import { Service, Badge, ResolvedDependency } from './types';
 
-// Sanitize text for safe markdown embedding: escape brackets and parentheses
+// Sanitize text for safe markdown/MDX embedding: escape HTML special chars and markdown link syntax
 function sanitizeMarkdownText(text: string): string {
-  return text.replace(/[[\]()]/g, (char) => `\\${char}`);
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/[[\]()]/g, (char) => `\\${char}`);
 }
 
 // Sanitize URL for safe markdown link embedding: only allow http/https protocols
@@ -93,7 +99,12 @@ function getOwners(config: CompassConfig): string[] {
   return [teamId];
 }
 
-export const defaultMarkdown = (config: CompassConfig, compassComponentUrl?: string, compassTeamUrl?: string) => {
+export const defaultMarkdown = (
+  config: CompassConfig,
+  compassComponentUrl?: string,
+  compassTeamUrl?: string,
+  dependencies?: ResolvedDependency[]
+) => {
   const safeComponentUrl = compassComponentUrl ? sanitizeUrl(compassComponentUrl) : '';
   const safeTeamUrl = compassTeamUrl ? sanitizeUrl(compassTeamUrl) : '';
 
@@ -108,6 +119,11 @@ export const defaultMarkdown = (config: CompassConfig, compassComponentUrl?: str
     .filter(Boolean)
     .join('\n');
 
+  const dependencyLines =
+    dependencies && dependencies.length > 0
+      ? dependencies.map((dep) => `* [${sanitizeMarkdownText(dep.name)}](/docs/services/${dep.id})`).join('\n')
+      : 'No known dependencies.';
+
   return `
 
 ## Links
@@ -115,6 +131,10 @@ export const defaultMarkdown = (config: CompassConfig, compassComponentUrl?: str
 * 🧭 [Compass Component](${safeComponentUrl})
 * 🪂 [Compass Team](${safeTeamUrl})
 ${linkLines}
+
+## Dependencies
+
+${dependencyLines}
 
 ## Architecture diagram
 
@@ -143,9 +163,15 @@ export function loadService(
   config: CompassConfig,
   compassUrl: string,
   serviceVersion: string = '0.0.0',
-  serviceId: string = config.name
+  serviceId: string = config.name,
+  dependencies?: ResolvedDependency[]
 ): Service {
-  const markdownTemplate = defaultMarkdown(config, getComponentUrl(compassUrl, config), getTeamUrl(compassUrl, config));
+  const markdownTemplate = defaultMarkdown(
+    config,
+    getComponentUrl(compassUrl, config),
+    getTeamUrl(compassUrl, config),
+    dependencies
+  );
   const badges = buildBadges(config);
   const repositoryUrl = getRepositoryUrl(config);
   const owners = getOwners(config);
