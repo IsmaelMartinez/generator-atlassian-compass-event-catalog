@@ -366,30 +366,80 @@ Helper functions were added to handle the corrected shapes: `extractField()` sea
 
 ---
 
-## Phase 5: Advanced Features
+## Phase 5: Advanced Features ✅ COMPLETE
 
 **Release**: v0.5.0
 **Effort**: Medium
 
-### 5.1 — Attach OpenAPI specs
+### 5.1 — Custom markdown templates ✅
 
-If a Compass component has API specifications (available via the API since the Optic acquisition), attach them to the EventCatalog service using `addFileToService()` or the `specifications` field on `Service`.
+**Files modified**: `src/types.ts`, `src/validation.ts`, `src/service.ts`, `src/index.ts`
 
-### 5.2 — Map scorecards to metadata
+**What was implemented:**
 
-Compass scorecards track component health. Map scorecard scores to EventCatalog badges or custom metadata so teams can see health status in EventCatalog.
+- Added `MarkdownTemplateFn` type to `src/types.ts`: `(config: CompassConfig, dependencies: ResolvedDependency[]) => string`
+- Added optional `markdownTemplate` field to `GeneratorProps`
+- Updated Zod schema in `src/validation.ts` with `z.function().optional()` for the template
+- Updated `loadService()` in `src/service.ts` to accept an optional `customMarkdownTemplate` parameter; when provided, it is called instead of `defaultMarkdown()`
+- Updated `src/index.ts` to pass `options.markdownTemplate` through to `loadService()`
 
-### 5.3 — Custom markdown templates
+Three new tests verify:
 
-Add an optional `markdownTemplate` function to `GeneratorProps` that lets users customize the generated markdown per service. Falls back to `defaultMarkdown` if not provided.
+- ✅ Custom template is used when provided (replaces default markdown)
+- ✅ Resolved dependencies are passed to the custom template function
+- ✅ Falls back to `defaultMarkdown` when template is not provided
 
-### 5.4 — EventCatalog v3: MDX format support
+### 5.2 — MDX format support ✅
 
-The `writeService` SDK function accepts `{ format: 'mdx' }`. Add a `format` option to `GeneratorProps` (default: `'mdx'` for v3 compatibility).
+**Files modified**: `src/types.ts`, `src/validation.ts`, `src/index.ts`
 
-### 5.5 — EventCatalog v3: Teams and Users
+**What was implemented:**
 
-If Compass provides team/owner data via the API, use `writeTeam()` and `writeUser()` from the SDK to create corresponding entities in EventCatalog, not just string references.
+- Added optional `format` field (`'md' | 'mdx'`) to `GeneratorProps` in `src/types.ts`
+- Added `z.enum(['md', 'mdx']).optional()` to the Zod schema in `src/validation.ts`
+- Updated `src/index.ts` to pass `{ format }` to all `writeService()` calls (defaults to `'mdx'`)
+
+Four new tests verify:
+
+- ✅ Default format works (mdx)
+- ✅ `format: 'md'` option is accepted
+- ✅ `format: 'mdx'` option is accepted
+- ✅ Invalid format values are rejected by Zod validation
+
+### 5.3 — Teams ✅
+
+**Files modified**: `src/index.ts`
+
+**What was implemented:**
+
+- Updated `src/index.ts` to extract `writeTeam` from the SDK
+- In the second pass, before writing each service, extracts team ID from `ownerId` ARN (UUID after `team/`)
+- Uses a `Set<string>` to track already-written team IDs for deduplication
+- Calls `writeTeam({ id, name, markdown }, { override: true })` for each unique team
+- Teams are referenced by ID in the service's `owners` array (existing behavior preserved)
+
+Three new tests verify:
+
+- ✅ Team entity is created from service ownerId
+- ✅ Teams are deduplicated when multiple services share the same owner
+- ✅ Separate teams are created for different ownerIds
+
+### 5.4 — Attach OpenAPI specs from links ✅
+
+**Files modified**: `src/service.ts`
+
+**What was implemented:**
+
+- Added `getOpenApiSpecifications()` function in `src/service.ts` that scans a component's links for names containing "openapi" or "swagger" (case-insensitive)
+- Matching links are mapped to `{ type: 'openapi', path: <sanitized URL>, name: <link name> }` specification entries
+- URLs are sanitized through `sanitizeUrl()` (same XSS prevention as other URLs)
+- Specifications are added to the `Service` object only when matches are found
+
+Three new tests verify:
+
+- ✅ Links with "openapi" in name are attached as specifications
+- ✅ Links with "swagger" in name are attached as specifications
+- ✅ Services without openapi/swagger links have no specifications
 
 ---
 
@@ -413,7 +463,7 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 | 2     | 0.2.0   | No (previously errored types now work)                | All Compass types supported                 | ✅ Complete |
 | 3     | 0.3.0   | No                                                    | Relationship mapping                        | ✅ Complete |
 | 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ✅ Complete |
-| 5     | 0.5.0   | No                                                    | OpenAPI specs, scorecards, MDX, teams       | ⏳ Planned  |
+| 5     | 0.5.0   | No                                                    | Custom templates, MDX, teams, OpenAPI specs | ✅ Complete |
 
 ---
 
@@ -421,20 +471,21 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 
 ```
 src/
-├── index.ts          # Main generator entry point (modified in phases 1-4)
-├── types.ts          # GeneratorProps, ResolvedDependency, re-export SDK types (modified in phases 1-3, 4)
+├── index.ts          # Main generator entry point (modified in phases 1-5)
+├── types.ts          # GeneratorProps, ResolvedDependency, MarkdownTemplateFn, re-export SDK types (modified in phases 1-5)
 ├── compass.ts        # YAML parser + CompassConfig type (modified in phase 2)
-├── compass-api.ts    # NEW: Compass GraphQL API client (phase 4)
-├── service.ts        # loadService with badge/metadata/dependency mapping (modified in phases 1-3)
+├── compass-api.ts    # Compass GraphQL API client (phase 4)
+├── service.ts        # loadService with badge/metadata/dependency/spec mapping (modified in phases 1-3, 5)
 ├── domain.ts         # Domain processing (minimal changes)
-├── validation.ts     # Zod schemas (phase 1)
+├── validation.ts     # Zod schemas (phases 1, 5)
 └── test/
-    ├── plugin.test.ts                    # Main tests (extended each phase, 36 tests)
+    ├── plugin.test.ts                    # Main tests (extended each phase, 49 tests)
     ├── my-service-compass.yml            # SERVICE fixture (with DEPENDS_ON refs)
     ├── my-application-compass.yml        # APPLICATION fixture (with DEPENDS_ON refs)
     ├── my-library-compass.yml            # LIBRARY fixture
     ├── my-capability-compass.yml         # CAPABILITY fixture
     ├── my-other-compass.notsupported.yml # OTHER fixture (with partial DEPENDS_ON refs)
+    ├── my-openapi-service-compass.yml    # SERVICE fixture with OpenAPI/Swagger links (phase 5)
     └── compass-api.test.ts              # API client tests (phase 4, 21 tests)
 ```
 

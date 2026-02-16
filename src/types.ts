@@ -1,4 +1,5 @@
 import type { Service, Badge } from '@eventcatalog/sdk';
+import type { CompassConfig } from './compass';
 
 type ServiceOptions = {
   id?: string;
@@ -14,6 +15,8 @@ export type ApiConfig = {
   typeFilter?: string[];
 };
 
+export type MarkdownTemplateFn = (config: CompassConfig, dependencies: ResolvedDependency[]) => string;
+
 // Configuration the users give your catalog
 export type GeneratorProps = {
   // YAML mode (existing)
@@ -25,6 +28,10 @@ export type GeneratorProps = {
   debug?: boolean;
   overrideExisting?: boolean;
   typeFilter?: string[];
+  // Phase 5: Custom markdown template function
+  markdownTemplate?: MarkdownTemplateFn;
+  // Phase 5: Output format (md or mdx), default: 'mdx'
+  format?: 'md' | 'mdx';
 };
 
 export type DomainOption = {

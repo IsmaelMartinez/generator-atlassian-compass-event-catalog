@@ -1,5 +1,5 @@
 import { CompassConfig } from './compass';
-import { Service, Badge, ResolvedDependency } from './types';
+import { Service, Badge, ResolvedDependency, MarkdownTemplateFn } from './types';
 
 // Sanitize text for safe markdown/MDX embedding: escape HTML special chars and markdown link syntax
 function sanitizeMarkdownText(text: string): string {
@@ -159,29 +159,44 @@ const getTeamUrl = (compassUrl: string, config: CompassConfig) => {
   }
 };
 
+function getOpenApiSpecifications(config: CompassConfig): Array<{ type: 'openapi'; path: string; name?: string }> {
+  if (!config.links) return [];
+  const specs: Array<{ type: 'openapi'; path: string; name?: string }> = [];
+  for (const link of config.links) {
+    if (!link.name) continue;
+    const nameLower = link.name.toLowerCase();
+    if (nameLower.includes('openapi') || nameLower.includes('swagger')) {
+      const safeUrl = sanitizeUrl(link.url);
+      if (safeUrl) {
+        specs.push({ type: 'openapi', path: safeUrl, name: link.name });
+      }
+    }
+  }
+  return specs;
+}
+
 export function loadService(
   config: CompassConfig,
   compassUrl: string,
   serviceVersion: string = '0.0.0',
   serviceId: string = config.name,
-  dependencies?: ResolvedDependency[]
+  dependencies?: ResolvedDependency[],
+  customMarkdownTemplate?: MarkdownTemplateFn
 ): Service {
-  const markdownTemplate = defaultMarkdown(
-    config,
-    getComponentUrl(compassUrl, config),
-    getTeamUrl(compassUrl, config),
-    dependencies
-  );
+  const markdown = customMarkdownTemplate
+    ? customMarkdownTemplate(config, dependencies || [])
+    : defaultMarkdown(config, getComponentUrl(compassUrl, config), getTeamUrl(compassUrl, config), dependencies);
   const badges = buildBadges(config);
   const repositoryUrl = getRepositoryUrl(config);
   const owners = getOwners(config);
+  const specifications = getOpenApiSpecifications(config);
 
   const service: Service = {
     id: serviceId,
     name: config.name,
     version: serviceVersion,
     summary: config.description || '',
-    markdown: markdownTemplate,
+    markdown,
   };
 
   if (badges.length > 0) {
@@ -194,6 +209,10 @@ export function loadService(
 
   if (owners.length > 0) {
     service.owners = owners;
+  }
+
+  if (specifications.length > 0) {
+    service.specifications = specifications;
   }
 
   return service;

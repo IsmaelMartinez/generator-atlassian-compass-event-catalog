@@ -1,0 +1,19 @@
+configVersion: 1
+name: my-openapi-service
+id: 'ari:cloud:compass:a0000000-b000-c000-d000-e00000000000:component/33333333-3333-3333-3333-333333333333/33333333-3333-3333-3333-333333333333'
+description: A service with OpenAPI spec links.
+ownerId: 'ari:cloud:teams::team/11111111-1111-1111-1111-111111111111'
+typeId: SERVICE
+fields:
+  tier: 1
+  lifecycle: Active
+links:
+  - name: OpenAPI Spec
+    type: OTHER_LINK
+    url: 'https://api.example.com/openapi.yaml'
+  - name: Swagger Documentation
+    type: DOCUMENT
+    url: 'https://api.example.com/swagger.json'
+  - name: Service repository
+    type: REPOSITORY
+    url: 'https://www.example.com/repos/my-openapi-service-repo'
