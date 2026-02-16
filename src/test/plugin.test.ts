@@ -20,6 +20,10 @@ const expectedMarkdown = `## Links
 * 👀 [Service dashboard](https://www.example.com/dashboards/service-dashboard)
 * 🏡 [Service repository](https://www.example.com/repos/my-service-repo)
 
+## Dependencies
+
+No known dependencies.
+
 ## Architecture diagram
 
 <NodeGraph />`;
@@ -599,6 +603,127 @@ describe('Atlassian Compass generator tests', () => {
           compassUrl: 'https://compass.atlassian.com',
         })
       ).rejects.toThrow();
+    });
+  });
+
+  describe('relationship mapping (DEPENDS_ON)', () => {
+    it('resolves dependencies between services processed together', async () => {
+      const { getService } = utils(catalogDir);
+
+      // my-service DEPENDS_ON my-application and my-library
+      // my-application DEPENDS_ON my-library
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-service-compass.yml') },
+          { path: join(__dirname, 'my-application-compass.yml') },
+          { path: join(__dirname, 'my-library-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+      // my-service depends on my-application and my-library
+      expect(service.markdown).toContain('## Dependencies');
+      expect(service.markdown).toContain('[my-application](/docs/services/my-application)');
+      expect(service.markdown).toContain('[my-library](/docs/services/my-library)');
+    });
+
+    it('resolves partial dependencies when only some targets are processed', async () => {
+      const { getService } = utils(catalogDir);
+
+      // my-service DEPENDS_ON my-application and my-library, but only my-application is processed
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }, { path: join(__dirname, 'my-application-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+      expect(service.markdown).toContain('[my-application](/docs/services/my-application)');
+      // my-library was not processed, so it should not appear as a resolved dependency link
+      expect(service.markdown).not.toContain('[my-library]');
+    });
+
+    it('shows "No known dependencies" for services without DEPENDS_ON', async () => {
+      const { getService } = utils(catalogDir);
+
+      // my-library has no DEPENDS_ON relationships
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-library-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-library');
+      expect(service).toBeDefined();
+      expect(service.markdown).toContain('## Dependencies');
+      expect(service.markdown).toContain('No known dependencies.');
+    });
+
+    it('handles missing dependency targets gracefully without crashing', async () => {
+      const { getService } = utils(catalogDir);
+
+      // my-other-component has DEPENDS_ON referencing my-application (exists) and a non-existent ARN
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-other-compass.notsupported.yml') },
+          { path: join(__dirname, 'my-application-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-other-component');
+      expect(service).toBeDefined();
+      // Should resolve the one that exists
+      expect(service.markdown).toContain('[my-application](/docs/services/my-application)');
+      // Should not crash due to the non-existent dependency
+    });
+
+    it('resolves dependencies correctly when services have custom IDs', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-service-compass.yml'), id: 'custom-service' },
+          { path: join(__dirname, 'my-application-compass.yml'), id: 'custom-app' },
+          { path: join(__dirname, 'my-library-compass.yml'), id: 'custom-lib' },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('custom-service');
+      expect(service).toBeDefined();
+      // Dependencies should use custom IDs
+      expect(service.markdown).toContain('[my-application](/docs/services/custom-app)');
+      expect(service.markdown).toContain('[my-library](/docs/services/custom-lib)');
+    });
+
+    it('includes resolved dependencies in service markdown within a domain', async () => {
+      const { getService, getDomain } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-service-compass.yml') },
+          { path: join(__dirname, 'my-application-compass.yml') },
+          { path: join(__dirname, 'my-library-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+        domain: {
+          id: 'my-domain',
+          name: 'My Domain',
+          version: '0.0.1',
+        },
+      });
+
+      const domain = await getDomain('my-domain', '0.0.1');
+      expect(domain).toBeDefined();
+      expect(domain.services).toHaveLength(3);
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+      expect(service.markdown).toContain('## Dependencies');
+      expect(service.markdown).toContain('[my-application](/docs/services/my-application)');
+      expect(service.markdown).toContain('[my-library](/docs/services/my-library)');
     });
   });
 });

@@ -6,7 +6,7 @@ Evolve this generator from a "Compass YAML file reader" into a full "Compass int
 
 ---
 
-## Phase 1: Modernize & Fix Core Gaps
+## Phase 1: Modernize & Fix Core Gaps ✅ COMPLETE
 
 **Release**: v0.1.0 (minor -- new behavior: updates instead of skips)
 **Effort**: Small
@@ -136,7 +136,7 @@ export const GeneratorPropsSchema = z.object({
 
 ---
 
-## Phase 2: Support All Compass Component Types
+## Phase 2: Support All Compass Component Types ✅ COMPLETE
 
 **Release**: v0.2.0
 **Effort**: Medium
@@ -179,80 +179,42 @@ Add a badge showing the Compass component type: `{ content: "APPLICATION", backg
 
 ---
 
-## Phase 3: Relationship Mapping
+## Phase 3: Relationship Mapping ✅ COMPLETE
 
 **Release**: v0.3.0
 **Effort**: Medium
 
-### 3.1 — Parse and map DEPENDS_ON relationships
+### 3.1 — Parse and map DEPENDS_ON relationships ✅
 
-**File**: `src/service.ts` or new file `src/relationships.ts`
+**Files modified**: `src/types.ts`, `src/service.ts`, `src/index.ts`
 
-Compass YAML already has:
+**What was implemented:**
 
-```yaml
-relationships:
-  DEPENDS_ON:
-    - 'ari:cloud:compass:...'
-```
+- Added `ResolvedDependency` type (`{ id: string; name: string }`) to `src/types.ts`
+- Updated `defaultMarkdown()` in `src/service.ts` to accept and render a `dependencies` parameter, generating a "Dependencies" section with links to dependent services (or "No known dependencies." when none exist)
+- Updated `loadService()` to accept optional `dependencies` parameter and pass it through to markdown generation
+- Implemented two-pass approach in `src/index.ts`:
+  1. **First pass**: Collects all services being processed into a Map (Compass ARN → service ID + name), respecting `typeFilter`
+  2. **Second pass**: For each service, resolves `DEPENDS_ON` ARNs against the map, logs warnings for unresolvable dependencies, and writes services with resolved dependency markdown
+- Missing dependency targets are handled gracefully (warning logged, not crashed)
+- Dependency text in markdown is sanitized against injection
 
-**Important**: The SDK does **not** have a generic `addRelationshipToService()` function. The SDK models relationships through specific mechanisms:
+### 3.2 — Tests for Phase 3 ✅
 
-- `sends` / `receives` — for message flows (events, commands, queries between services via channels)
-- `writesTo` / `readsFrom` — for data store relationships
-- `<NodeGraph />` — renders the service/domain graph visually in markdown
+Six new tests added to `src/test/plugin.test.ts`:
 
-Compass `DEPENDS_ON` is a general architectural dependency, not a message flow. It doesn't map cleanly to `sends`/`receives` (which are for events/commands, not service-to-service dependencies). Using `addEventToService()` would be incorrect here — that function is for linking events to services, not for expressing that one service depends on another.
+- ✅ Resolves dependencies between services processed together (my-service → my-application, my-library)
+- ✅ Resolves partial dependencies when only some targets are processed
+- ✅ Shows "No known dependencies" for services without DEPENDS_ON
+- ✅ Handles missing dependency targets gracefully without crashing
+- ✅ Resolves dependencies correctly when services have custom IDs
+- ✅ Includes resolved dependencies in service markdown within a domain
 
-**Approach**: Express dependencies through the service markdown and the domain's `<NodeGraph />`. The `<NodeGraph />` component already renders all services within a domain and their connections. We enrich each service's markdown with an explicit "Dependencies" section listing what it depends on, and ensure both services are in the same domain so the graph visualizes the relationship.
+Test fixtures updated with cross-referencing DEPENDS_ON ARNs:
 
-1. Collect all service IDs being processed in a Map (Compass ARN → EventCatalog ID)
-2. For each service, resolve its `DEPENDS_ON` ARNs to EventCatalog service IDs
-3. Include the dependency list in the service's generated markdown
-4. If both services are in the same domain, the `<NodeGraph />` will show them together
-
-**File**: `src/service.ts`
-
-Add a dependencies section to the generated markdown:
-
-```ts
-// In defaultMarkdown(), add after links section:
-const dependencyLinks = dependencies
-  ?.map((dep) => `* [${dep.name}](/docs/services/${dep.id})`)
-  .join('\n');
-
-// Include in markdown:
-## Dependencies
-${dependencyLinks || 'No known dependencies.'}
-```
-
-**File**: `src/index.ts`
-
-Build the service map and resolve dependencies before generating markdown:
-
-```ts
-// First pass: collect all services into a map
-const serviceMap = new Map<string, { serviceId: string; config: CompassConfig }>();
-for (const file of compassFiles) {
-  const config = loadConfig(file.path);
-  serviceMap.set(config.id || '', { serviceId: file.id || config.name, config });
-}
-
-// Second pass: write services with resolved dependencies
-for (const file of compassFiles) {
-  const config = loadConfig(file.path);
-  const dependencies = (config.relationships?.DEPENDS_ON || []).map((arn) => serviceMap.get(arn)).filter(Boolean);
-
-  const service = loadService(config, compassUrl, file.version, file.id, dependencies);
-  await writeService(service);
-}
-```
-
-### 3.2 — Tests for Phase 3
-
-- Add fixture with two services that have `DEPENDS_ON` pointing to each other
-- Test that relationships are logged/processed
-- Test that missing dependency targets are handled gracefully (log warning, don't crash)
+- `my-service-compass.yml` → depends on `my-application` and `my-library`
+- `my-application-compass.yml` → depends on `my-library`
+- `my-other-compass.notsupported.yml` → depends on `my-application` and a non-existent ARN (for graceful failure testing)
 
 ---
 
@@ -433,13 +395,13 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 
 ## Release Schedule
 
-| Phase | Version | Breaking?                                             | What ships                                  |
-| ----- | ------- | ----------------------------------------------------- | ------------------------------------------- |
-| 1     | 0.1.0   | No (new default `overrideExisting: true` is additive) | Richer services, update support, validation |
-| 2     | 0.2.0   | No (previously errored types now work)                | All Compass types supported                 |
-| 3     | 0.3.0   | No                                                    | Relationship mapping                        |
-| 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     |
-| 5     | 0.5.0   | No                                                    | OpenAPI specs, scorecards, MDX, teams       |
+| Phase | Version | Breaking?                                             | What ships                                  | Status      |
+| ----- | ------- | ----------------------------------------------------- | ------------------------------------------- | ----------- |
+| 1     | 0.1.0   | No (new default `overrideExisting: true` is additive) | Richer services, update support, validation | ✅ Complete |
+| 2     | 0.2.0   | No (previously errored types now work)                | All Compass types supported                 | ✅ Complete |
+| 3     | 0.3.0   | No                                                    | Relationship mapping                        | ✅ Complete |
+| 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ⏳ Planned  |
+| 5     | 0.5.0   | No                                                    | OpenAPI specs, scorecards, MDX, teams       | ⏳ Planned  |
 
 ---
 
@@ -448,19 +410,19 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 ```
 src/
 ├── index.ts          # Main generator entry point (modified in phases 1-4)
-├── types.ts          # GeneratorProps, re-export SDK types (modified in phases 1-2, 4)
+├── types.ts          # GeneratorProps, ResolvedDependency, re-export SDK types (modified in phases 1-3, 4)
 ├── compass.ts        # YAML parser + CompassConfig type (modified in phase 2)
 ├── compass-api.ts    # NEW: Compass GraphQL API client (phase 4)
-├── service.ts        # loadService with badge/metadata mapping (modified in phases 1-3)
+├── service.ts        # loadService with badge/metadata/dependency mapping (modified in phases 1-3)
 ├── domain.ts         # Domain processing (minimal changes)
-├── relationships.ts  # NEW: relationship mapping logic (phase 3)
-├── validation.ts     # NEW: Zod schemas (phase 1)
+├── validation.ts     # Zod schemas (phase 1)
 └── test/
-    ├── plugin.test.ts                    # Main tests (extended each phase)
-    ├── my-service-compass.yml            # Existing fixture
-    ├── my-other-compass.notsupported.yml # Existing fixture (rename in phase 2)
-    ├── my-app-compass.yml                # NEW fixture (phase 2)
-    ├── my-library-compass.yml            # NEW fixture (phase 2)
+    ├── plugin.test.ts                    # Main tests (extended each phase, 34 tests)
+    ├── my-service-compass.yml            # SERVICE fixture (with DEPENDS_ON refs)
+    ├── my-application-compass.yml        # APPLICATION fixture (with DEPENDS_ON refs)
+    ├── my-library-compass.yml            # LIBRARY fixture
+    ├── my-capability-compass.yml         # CAPABILITY fixture
+    ├── my-other-compass.notsupported.yml # OTHER fixture (with partial DEPENDS_ON refs)
     └── compass-api.test.ts              # NEW: API client tests (phase 4)
 ```
 

@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { loadConfig, CompassConfig } from './compass';
 import { loadService } from './service';
 import Domain from './domain';
-import { GeneratorProps } from './types';
+import { GeneratorProps, ResolvedDependency } from './types';
 import { GeneratorPropsSchema } from './validation';
 
 // Sanitize IDs to prevent path traversal from untrusted sources
@@ -43,6 +43,11 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
     await domain.processDomain();
   }
 
+  // First pass: load all configs, apply typeFilter, and collect into a map (Compass ARN → service info)
+  // This allows resolving DEPENDS_ON relationships between services and avoids parsing YAML twice
+  const serviceMap = new Map<string, { serviceId: string; name: string }>();
+  const processableFiles: { file: (typeof compassFiles)[number]; config: CompassConfig; serviceId: string }[] = [];
+
   for (const file of compassFiles) {
     const compassConfig: CompassConfig = loadConfig(file.path);
 
@@ -56,17 +61,43 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
       }
     }
 
-    console.log(chalk.blue(`\nProcessing component: ${compassConfig.name} (type: ${compassConfig.typeId || 'unknown'})`));
-
     const serviceId = sanitizeId(file.id || compassConfig.name);
+    if (compassConfig.id) {
+      serviceMap.set(compassConfig.id, { serviceId, name: compassConfig.name });
+    }
+    processableFiles.push({ file, config: compassConfig, serviceId });
+  }
+
+  // Second pass: write services with resolved dependencies
+  for (const { file, config: compassConfig, serviceId } of processableFiles) {
+    console.log(chalk.blue(`\nProcessing component: ${compassConfig.name} (type: ${compassConfig.typeId || 'unknown'})`));
 
     if (domain) {
       // Add the service to the domain
       await domain.addServiceToDomain(serviceId, file.version);
     }
 
+    // Resolve DEPENDS_ON relationships
+    const dependencies: ResolvedDependency[] = [];
+    if (compassConfig.relationships?.DEPENDS_ON) {
+      for (const arn of compassConfig.relationships.DEPENDS_ON) {
+        const target = serviceMap.get(arn);
+        if (target) {
+          dependencies.push({ id: target.serviceId, name: target.name });
+        } else {
+          console.log(chalk.yellow(` - Dependency ${arn} not found in processed services, skipping`));
+        }
+      }
+    }
+
     const existing = await getService(serviceId);
-    const compassService = loadService(compassConfig, options.compassUrl.replace(/\/$/, ''), file.version, serviceId);
+    const compassService = loadService(
+      compassConfig,
+      options.compassUrl.replace(/\/$/, ''),
+      file.version,
+      serviceId,
+      dependencies
+    );
 
     if (existing && options.overrideExisting !== false) {
       await writeService(compassService, { override: true });
