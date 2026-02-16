@@ -1,6 +1,4 @@
 name: Tests
-permissions:
-  contents: read
 
 on:
   pull_request:
@@ -12,6 +10,8 @@ on:
 jobs:
   build:
     name: Tests
+    permissions:
+      contents: read
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
