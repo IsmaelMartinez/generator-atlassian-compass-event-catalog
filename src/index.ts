@@ -5,6 +5,7 @@ import { loadService } from './service';
 import Domain from './domain';
 import { GeneratorProps, ResolvedDependency } from './types';
 import { GeneratorPropsSchema } from './validation';
+import { fetchComponents } from './compass-api';
 
 // Sanitize IDs to prevent path traversal from untrusted sources
 function sanitizeId(id: string): string {
@@ -14,12 +15,15 @@ function sanitizeId(id: string): string {
 // The event.catalog.js values for your plugin
 type EventCatalogConfig = Record<string, unknown>;
 
+type ProcessableEntry = {
+  config: CompassConfig;
+  serviceId: string;
+  version: string;
+};
+
 export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   // Validate configuration
   GeneratorPropsSchema.parse(options);
-
-  // This is set by EventCatalog. This is the directory where the catalog is stored
-  console.log(chalk.green(`Processing ${options.services.length} Compass files...`));
 
   if (!process.env.PROJECT_DIR) {
     process.env.PROJECT_DIR = process.cwd();
@@ -31,7 +35,6 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
     console.debug(chalk.magenta('Configuration provided', JSON.stringify(_config)));
     console.debug(chalk.magenta('Generator properties', JSON.stringify(options)));
   }
-  const compassFiles = Array.isArray(options.services) ? options.services : [options.services];
 
   // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
   const { getService, writeService } = utils(projectDir);
@@ -43,38 +46,64 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
     await domain.processDomain();
   }
 
-  // First pass: load all configs, apply typeFilter, and collect into a map (Compass ARN → service info)
-  // This allows resolving DEPENDS_ON relationships between services and avoids parsing YAML twice
+  // First pass: build processable entries from either API or YAML mode
   const serviceMap = new Map<string, { serviceId: string; name: string }>();
-  const processableFiles: { file: (typeof compassFiles)[number]; config: CompassConfig; serviceId: string }[] = [];
+  const processableEntries: ProcessableEntry[] = [];
 
-  for (const file of compassFiles) {
-    const compassConfig: CompassConfig = loadConfig(file.path);
+  if (options.api) {
+    // API mode: fetch components from Compass GraphQL API
+    console.log(chalk.green('Fetching components from Compass API...'));
+    const components = await fetchComponents(options.api);
+    console.log(chalk.green(`Fetched ${components.length} components from Compass API`));
 
-    // If typeFilter is set, skip components whose typeId is not in the list
-    if (options.typeFilter && options.typeFilter.length > 0) {
-      if (!compassConfig.typeId || !options.typeFilter.includes(compassConfig.typeId)) {
-        console.log(
-          chalk.yellow(`\nSkipping ${compassConfig.name} (type ${compassConfig.typeId || 'unknown'} not in typeFilter)`)
-        );
-        continue;
+    for (const config of components) {
+      // Apply top-level typeFilter (api.typeFilter is handled server-side in the query)
+      if (options.typeFilter && options.typeFilter.length > 0) {
+        if (!config.typeId || !options.typeFilter.includes(config.typeId)) {
+          console.log(chalk.yellow(`\nSkipping ${config.name} (type ${config.typeId || 'unknown'} not in typeFilter)`));
+          continue;
+        }
       }
-    }
 
-    const serviceId = sanitizeId(file.id || compassConfig.name);
-    if (compassConfig.id) {
-      serviceMap.set(compassConfig.id, { serviceId, name: compassConfig.name });
+      const serviceId = sanitizeId(config.name);
+      if (config.id) {
+        serviceMap.set(config.id, { serviceId, name: config.name });
+      }
+      processableEntries.push({ config, serviceId, version: '0.0.0' });
     }
-    processableFiles.push({ file, config: compassConfig, serviceId });
+  } else if (options.services) {
+    // YAML mode: read local files (existing behavior)
+    const compassFiles = Array.isArray(options.services) ? options.services : [options.services];
+    console.log(chalk.green(`Processing ${compassFiles.length} Compass files...`));
+
+    for (const file of compassFiles) {
+      const compassConfig: CompassConfig = loadConfig(file.path);
+
+      // If typeFilter is set, skip components whose typeId is not in the list
+      if (options.typeFilter && options.typeFilter.length > 0) {
+        if (!compassConfig.typeId || !options.typeFilter.includes(compassConfig.typeId)) {
+          console.log(
+            chalk.yellow(`\nSkipping ${compassConfig.name} (type ${compassConfig.typeId || 'unknown'} not in typeFilter)`)
+          );
+          continue;
+        }
+      }
+
+      const serviceId = sanitizeId(file.id || compassConfig.name);
+      if (compassConfig.id) {
+        serviceMap.set(compassConfig.id, { serviceId, name: compassConfig.name });
+      }
+      processableEntries.push({ config: compassConfig, serviceId, version: file.version || '0.0.0' });
+    }
   }
 
   // Second pass: write services with resolved dependencies
-  for (const { file, config: compassConfig, serviceId } of processableFiles) {
+  for (const { config: compassConfig, serviceId, version } of processableEntries) {
     console.log(chalk.blue(`\nProcessing component: ${compassConfig.name} (type: ${compassConfig.typeId || 'unknown'})`));
 
     if (domain) {
       // Add the service to the domain
-      await domain.addServiceToDomain(serviceId, file.version);
+      await domain.addServiceToDomain(serviceId, version);
     }
 
     // Resolve DEPENDS_ON relationships
@@ -91,13 +120,7 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
     }
 
     const existing = await getService(serviceId);
-    const compassService = loadService(
-      compassConfig,
-      options.compassUrl.replace(/\/$/, ''),
-      file.version,
-      serviceId,
-      dependencies
-    );
+    const compassService = loadService(compassConfig, options.compassUrl.replace(/\/$/, ''), version, serviceId, dependencies);
 
     if (existing && options.overrideExisting !== false) {
       await writeService(compassService, { override: true });

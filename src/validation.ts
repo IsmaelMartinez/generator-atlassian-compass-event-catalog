@@ -12,11 +12,27 @@ const DomainOptionSchema = z.object({
   version: z.string().min(1),
 });
 
-export const GeneratorPropsSchema = z.object({
-  services: z.array(ServiceOptionsSchema).min(1, 'At least one service is required'),
-  compassUrl: z.string().url('compassUrl must be a valid URL'),
-  domain: DomainOptionSchema.optional(),
-  debug: z.boolean().optional(),
-  overrideExisting: z.boolean().optional(),
+const ApiConfigSchema = z.object({
+  cloudId: z.string().min(1, 'cloudId is required'),
+  apiToken: z.string().min(1, 'apiToken is required'),
+  email: z.string().min(1, 'email is required'),
+  baseUrl: z.string().url('baseUrl must be a valid URL'),
   typeFilter: z.array(z.string().min(1)).optional(),
 });
+
+export const GeneratorPropsSchema = z
+  .object({
+    services: z.array(ServiceOptionsSchema).min(1, 'At least one service is required').optional(),
+    api: ApiConfigSchema.optional(),
+    compassUrl: z.string().url('compassUrl must be a valid URL'),
+    domain: DomainOptionSchema.optional(),
+    debug: z.boolean().optional(),
+    overrideExisting: z.boolean().optional(),
+    typeFilter: z.array(z.string().min(1)).optional(),
+  })
+  .refine((data) => data.services || data.api, {
+    message: 'Either "services" (YAML mode) or "api" (API mode) must be provided',
+  })
+  .refine((data) => !(data.services && data.api), {
+    message: 'Cannot use both "services" and "api" — choose one mode',
+  });

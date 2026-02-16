@@ -218,7 +218,7 @@ Test fixtures updated with cross-referencing DEPENDS_ON ARNs:
 
 ---
 
-## Phase 4: Compass GraphQL API Integration
+## Phase 4: Compass GraphQL API Integration ✅ COMPLETE
 
 **Release**: v0.4.0
 **Effort**: High (largest phase)
@@ -400,7 +400,7 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 | 1     | 0.1.0   | No (new default `overrideExisting: true` is additive) | Richer services, update support, validation | ✅ Complete |
 | 2     | 0.2.0   | No (previously errored types now work)                | All Compass types supported                 | ✅ Complete |
 | 3     | 0.3.0   | No                                                    | Relationship mapping                        | ✅ Complete |
-| 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ⏳ Planned  |
+| 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ✅ Complete |
 | 5     | 0.5.0   | No                                                    | OpenAPI specs, scorecards, MDX, teams       | ⏳ Planned  |
 
 ---
@@ -417,13 +417,13 @@ src/
 ├── domain.ts         # Domain processing (minimal changes)
 ├── validation.ts     # Zod schemas (phase 1)
 └── test/
-    ├── plugin.test.ts                    # Main tests (extended each phase, 34 tests)
+    ├── plugin.test.ts                    # Main tests (extended each phase, 36 tests)
     ├── my-service-compass.yml            # SERVICE fixture (with DEPENDS_ON refs)
     ├── my-application-compass.yml        # APPLICATION fixture (with DEPENDS_ON refs)
     ├── my-library-compass.yml            # LIBRARY fixture
     ├── my-capability-compass.yml         # CAPABILITY fixture
     ├── my-other-compass.notsupported.yml # OTHER fixture (with partial DEPENDS_ON refs)
-    └── compass-api.test.ts              # NEW: API client tests (phase 4)
+    └── compass-api.test.ts              # API client tests (phase 4, 21 tests)
 ```
 
 ---

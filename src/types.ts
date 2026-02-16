@@ -6,9 +6,20 @@ type ServiceOptions = {
   version?: string;
 };
 
+export type ApiConfig = {
+  cloudId: string;
+  apiToken: string;
+  email: string;
+  baseUrl: string;
+  typeFilter?: string[];
+};
+
 // Configuration the users give your catalog
 export type GeneratorProps = {
-  services: ServiceOptions[];
+  // YAML mode (existing)
+  services?: ServiceOptions[];
+  // API mode (new)
+  api?: ApiConfig;
   compassUrl: string;
   domain?: DomainOption;
   debug?: boolean;
