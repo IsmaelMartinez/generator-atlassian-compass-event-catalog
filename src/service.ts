@@ -92,11 +92,17 @@ function getRepositoryUrl(config: CompassConfig): string | undefined {
   return config.links?.find((link) => link.type === 'REPOSITORY')?.url;
 }
 
+// Extract team UUID from Compass ownerId ARN (e.g., ari:cloud:teams::team/UUID -> UUID)
+export function extractTeamId(ownerId: string): string | undefined {
+  const parts = ownerId.split('/');
+  const teamId = parts[parts.length - 1];
+  return teamId || undefined;
+}
+
 function getOwners(config: CompassConfig): string[] {
   if (!config.ownerId) return [];
-  const parts = config.ownerId.split('/');
-  const teamId = parts[parts.length - 1];
-  return [teamId];
+  const teamId = extractTeamId(config.ownerId);
+  return teamId ? [teamId] : [];
 }
 
 export const defaultMarkdown = (

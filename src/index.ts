@@ -1,7 +1,7 @@
 import utils from '@eventcatalog/sdk';
 import chalk from 'chalk';
 import { loadConfig, CompassConfig } from './compass';
-import { loadService } from './service';
+import { loadService, extractTeamId } from './service';
 import Domain from './domain';
 import { GeneratorProps, ResolvedDependency } from './types';
 import { GeneratorPropsSchema } from './validation';
@@ -144,12 +144,14 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
 
     // Write team entity if ownerId is present and not yet written
     if (compassConfig.ownerId) {
-      const ownerParts = compassConfig.ownerId.split('/');
-      const teamId = ownerParts[ownerParts.length - 1];
-      if (teamId && !teamsWritten.has(teamId)) {
-        await writeTeam({ id: teamId, name: teamId, markdown: '' }, { override: true });
-        teamsWritten.add(teamId);
-        console.log(chalk.cyan(` - Team ${teamId} created`));
+      const rawTeamId = extractTeamId(compassConfig.ownerId);
+      if (rawTeamId) {
+        const teamId = sanitizeId(rawTeamId);
+        if (!teamsWritten.has(teamId)) {
+          await writeTeam({ id: teamId, name: teamId, markdown: '' }, { override: true });
+          teamsWritten.add(teamId);
+          console.log(chalk.cyan(` - Team ${teamId} created`));
+        }
       }
     }
 

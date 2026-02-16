@@ -408,12 +408,14 @@ Four new tests verify:
 
 ### 5.3 — Teams ✅
 
-**Files modified**: `src/index.ts`
+**Files modified**: `src/index.ts`, `src/service.ts`
 
 **What was implemented:**
 
 - Updated `src/index.ts` to extract `writeTeam` from the SDK
+- Extracted shared `extractTeamId()` helper in `src/service.ts` to parse team UUID from ownerId ARN (eliminates duplicated ARN parsing logic)
 - In the second pass, before writing each service, extracts team ID from `ownerId` ARN (UUID after `team/`)
+- Team IDs are sanitized via `sanitizeId()` to prevent path traversal (security fix from review)
 - Uses a `Set<string>` to track already-written team IDs for deduplication
 - Calls `writeTeam({ id, name, markdown }, { override: true })` for each unique team
 - Teams are referenced by ID in the service's `owners` array (existing behavior preserved)
@@ -443,6 +445,52 @@ Three new tests verify:
 
 ---
 
+## Phase 6: Polish, Resilience & DX
+
+**Release**: v0.6.0
+**Effort**: Medium
+
+### 6.1 — Enrich team entities with Compass team data
+
+Currently teams are written with `{ id: teamId, name: teamId, markdown: '' }` — the name is just the UUID, which isn't user-friendly. When using API mode, fetch team details from the Compass Teams API (or resolve from component metadata) to populate `name` with an actual team display name. In YAML mode, the ownerId ARN is all we have, so the UUID fallback remains.
+
+### 6.2 — Configurable service ID strategy
+
+Currently service IDs come from `file.id || compassConfig.name` (YAML mode) or `config.name` (API mode), then sanitized. Add an optional `serviceIdStrategy` to `GeneratorProps`:
+
+- `'name'` (default): use component name
+- `'compass-id'`: use the Compass component ID (ARN), sanitized
+- A custom function `(config: CompassConfig) => string` for full control
+
+This gives users flexibility when component names aren't unique across teams.
+
+### 6.3 — Error resilience and partial failure handling
+
+Currently, if any single service fails to process (e.g., YAML parse error, SDK write failure), the entire generator run crashes. Wrap each service's processing in a try/catch, log the error, and continue with the remaining services. At the end, report a summary of successes and failures.
+
+### 6.4 — Dry-run mode
+
+Add a `dryRun?: boolean` option to `GeneratorProps`. When enabled, the generator processes all services and logs what _would_ be written (service name, version, badges, dependencies, teams) without actually calling `writeService()`, `writeTeam()`, or modifying the catalog. Useful for previewing changes before committing them.
+
+### 6.5 — AsyncAPI spec support
+
+Extend the OpenAPI link detection (Phase 5.4) to also detect AsyncAPI specifications. Links with names containing "asyncapi" are mapped to `{ type: 'asyncapi', path, name }`. This complements the OpenAPI support for event-driven architectures.
+
+### 6.6 — Scorecard-to-badge mapping
+
+Map Compass scorecard scores to EventCatalog badges. When a component has scorecard data (available via the API), create badges like `{ content: "Health: 85%", backgroundColor: "#22c55e", textColor: "#fff" }`. This requires extending the GraphQL query to fetch scorecard data and adding a mapping function.
+
+### 6.7 — Tests for Phase 6
+
+- Test team name enrichment in API mode
+- Test each service ID strategy option
+- Test partial failure handling (one service fails, others succeed)
+- Test dry-run mode produces no side effects
+- Test AsyncAPI spec detection
+- Test scorecard badge mapping
+
+---
+
 ## Dependency Changes Across Phases
 
 | Phase | Add                                    | Remove               |
@@ -452,6 +500,7 @@ Three new tests verify:
 | 3     | —                                      | —                    |
 | 4     | `node-fetch` (if needed for API calls) | —                    |
 | 5     | —                                      | —                    |
+| 6     | —                                      | —                    |
 
 ---
 
@@ -464,6 +513,7 @@ Three new tests verify:
 | 3     | 0.3.0   | No                                                    | Relationship mapping                        | ✅ Complete |
 | 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ✅ Complete |
 | 5     | 0.5.0   | No                                                    | Custom templates, MDX, teams, OpenAPI specs | ✅ Complete |
+| 6     | 0.6.0   | No                                                    | Polish, resilience, DX improvements         | ⏳ Planned  |
 
 ---
 
