@@ -604,6 +604,29 @@ describe('Atlassian Compass generator tests', () => {
         })
       ).rejects.toThrow();
     });
+
+    it('throws validation error when neither services nor api is provided', async () => {
+      await expect(
+        plugin(eventCatalogConfig, {
+          compassUrl: 'https://compass.atlassian.com',
+        })
+      ).rejects.toThrow();
+    });
+
+    it('throws validation error when both services and api are provided', async () => {
+      await expect(
+        plugin(eventCatalogConfig, {
+          services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+          api: {
+            cloudId: 'test',
+            apiToken: 'test',
+            email: 'test@example.com',
+            baseUrl: 'https://test.atlassian.net',
+          },
+          compassUrl: 'https://compass.atlassian.com',
+        })
+      ).rejects.toThrow();
+    });
   });
 
   describe('relationship mapping (DEPENDS_ON)', () => {

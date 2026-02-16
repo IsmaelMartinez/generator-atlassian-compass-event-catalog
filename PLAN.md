@@ -218,7 +218,7 @@ Test fixtures updated with cross-referencing DEPENDS_ON ARNs:
 
 ---
 
-## Phase 4: Compass GraphQL API Integration
+## Phase 4: Compass GraphQL API Integration ✅ COMPLETE
 
 **Release**: v0.4.0
 **Effort**: High (largest phase)
@@ -342,15 +342,27 @@ function resolveValue(value: string): string {
 }
 ```
 
-### 4.7 — Tests for Phase 4
+### 4.7 — Schema corrections (post-implementation validation)
 
-- Mock the GraphQL endpoint (use `msw` or simple fetch mock)
+After initial implementation, the GraphQL query and response types were validated against the Atlassian Compass API documentation and community examples. Four field-name mismatches were found and corrected:
+
+- Component type field is `typeId` (not `type`)
+- Labels are objects `{ name: string }` (not plain strings)
+- Lifecycle/tier fields use the `CompassEnumField` inline fragment: `fields { definition { name } ... on CompassEnumField { value } }` (not `{ lifecycle: { label }, tier: { label } }`)
+- Relationship nodes use `nodeId` (not `endNodeAri`)
+
+Helper functions were added to handle the corrected shapes: `extractField()` searches the fields array by definition name, `mapLifecycle()` normalizes both uppercase (ACTIVE) and title case (Active) values, and `mapTier()` extracts the numeric tier from strings like "Tier 1".
+
+### 4.8 — Tests for Phase 4
+
+- Mock the GraphQL endpoint (simple fetch mock via `vi.stubGlobal`)
 - Test that API mode fetches and processes components
 - Test pagination (multiple pages)
 - Test auth header is correctly formed
 - Test env var resolution
 - Test error handling (401, 403, 429 rate limit, network errors)
 - Test that YAML mode still works unchanged
+- All mocks use corrected response shapes matching actual API
 
 ---
 
@@ -400,7 +412,7 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 | 1     | 0.1.0   | No (new default `overrideExisting: true` is additive) | Richer services, update support, validation | ✅ Complete |
 | 2     | 0.2.0   | No (previously errored types now work)                | All Compass types supported                 | ✅ Complete |
 | 3     | 0.3.0   | No                                                    | Relationship mapping                        | ✅ Complete |
-| 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ⏳ Planned  |
+| 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ✅ Complete |
 | 5     | 0.5.0   | No                                                    | OpenAPI specs, scorecards, MDX, teams       | ⏳ Planned  |
 
 ---
@@ -417,13 +429,13 @@ src/
 ├── domain.ts         # Domain processing (minimal changes)
 ├── validation.ts     # Zod schemas (phase 1)
 └── test/
-    ├── plugin.test.ts                    # Main tests (extended each phase, 34 tests)
+    ├── plugin.test.ts                    # Main tests (extended each phase, 36 tests)
     ├── my-service-compass.yml            # SERVICE fixture (with DEPENDS_ON refs)
     ├── my-application-compass.yml        # APPLICATION fixture (with DEPENDS_ON refs)
     ├── my-library-compass.yml            # LIBRARY fixture
     ├── my-capability-compass.yml         # CAPABILITY fixture
     ├── my-other-compass.notsupported.yml # OTHER fixture (with partial DEPENDS_ON refs)
-    └── compass-api.test.ts              # NEW: API client tests (phase 4)
+    └── compass-api.test.ts              # API client tests (phase 4, 21 tests)
 ```
 
 ---
