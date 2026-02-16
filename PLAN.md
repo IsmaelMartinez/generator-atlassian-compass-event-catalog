@@ -445,49 +445,147 @@ Three new tests verify:
 
 ---
 
-## Phase 6: Polish, Resilience & DX
+## Phase 6: Polish, Resilience & DX ✅ COMPLETE
 
 **Release**: v0.6.0
 **Effort**: Medium
 
-### 6.1 — Enrich team entities with Compass team data
+### 6.1 — Enrich team entities with Compass team data ✅
 
-Currently teams are written with `{ id: teamId, name: teamId, markdown: '' }` — the name is just the UUID, which isn't user-friendly. When using API mode, fetch team details from the Compass Teams API (or resolve from component metadata) to populate `name` with an actual team display name. In YAML mode, the ownerId ARN is all we have, so the UUID fallback remains.
+**Files modified**: `src/compass-api.ts`, `src/index.ts`
 
-### 6.2 — Configurable service ID strategy
+**What was implemented:**
 
-Currently service IDs come from `file.id || compassConfig.name` (YAML mode) or `config.name` (API mode), then sanitized. Add an optional `serviceIdStrategy` to `GeneratorProps`:
+- Added `fetchTeamById()` function to `src/compass-api.ts` that queries the Compass Teams GraphQL API (`team.teamById`) to fetch a team's display name by UUID
+- Updated `src/index.ts` team writing logic: in API mode, attempts to fetch the team's display name via `fetchTeamById()` before writing the team entity
+- Falls back gracefully to UUID-based name if the team fetch fails (network error, 404, etc.)
+- In YAML mode, the UUID fallback remains (no API available)
 
-- `'name'` (default): use component name
-- `'compass-id'`: use the Compass component ID (ARN), sanitized
-- A custom function `(config: CompassConfig) => string` for full control
+Four new tests verify:
 
-This gives users flexibility when component names aren't unique across teams.
+- ✅ Team display name is fetched and used in API mode
+- ✅ Falls back to UUID when team fetch fails
+- ✅ Returns null on HTTP error
+- ✅ Returns null on GraphQL errors
 
-### 6.3 — Error resilience and partial failure handling
+### 6.2 — Configurable service ID strategy ✅
 
-Currently, if any single service fails to process (e.g., YAML parse error, SDK write failure), the entire generator run crashes. Wrap each service's processing in a try/catch, log the error, and continue with the remaining services. At the end, report a summary of successes and failures.
+**Files modified**: `src/types.ts`, `src/validation.ts`, `src/index.ts`
 
-### 6.4 — Dry-run mode
+**What was implemented:**
 
-Add a `dryRun?: boolean` option to `GeneratorProps`. When enabled, the generator processes all services and logs what _would_ be written (service name, version, badges, dependencies, teams) without actually calling `writeService()`, `writeTeam()`, or modifying the catalog. Useful for previewing changes before committing them.
+- Added `ServiceIdStrategy` type to `src/types.ts`: `'name' | 'compass-id' | ((config: CompassConfig) => string)`
+- Added optional `serviceIdStrategy` field to `GeneratorProps`
+- Updated Zod schema in `src/validation.ts` with `z.union([z.enum(['name', 'compass-id']), z.function()])` validation
+- Added `resolveServiceId()` helper in `src/index.ts` that applies the strategy:
+  - `'name'` (default): uses component name (existing behavior)
+  - `'compass-id'`: uses the Compass ARN/ID, sanitized
+  - Custom function: calls the user's function, then sanitizes the result
+  - File-level `id` override takes precedence over any strategy
+- Updated both API mode and YAML mode to use `resolveServiceId()`
 
-### 6.5 — AsyncAPI spec support
+Four new tests verify:
 
-Extend the OpenAPI link detection (Phase 5.4) to also detect AsyncAPI specifications. Links with names containing "asyncapi" are mapped to `{ type: 'asyncapi', path, name }`. This complements the OpenAPI support for event-driven architectures.
+- ✅ Default name-based service IDs
+- ✅ `compass-id` strategy derives ID from Compass ARN
+- ✅ Custom function strategy for service IDs
+- ✅ File-level id overrides serviceIdStrategy
 
-### 6.6 — Scorecard-to-badge mapping
+### 6.3 — Error resilience and partial failure handling ✅
 
-Map Compass scorecard scores to EventCatalog badges. When a component has scorecard data (available via the API), create badges like `{ content: "Health: 85%", backgroundColor: "#22c55e", textColor: "#fff" }`. This requires extending the GraphQL query to fetch scorecard data and adding a mapping function.
+**Files modified**: `src/index.ts`
 
-### 6.7 — Tests for Phase 6
+**What was implemented:**
 
-- Test team name enrichment in API mode
-- Test each service ID strategy option
-- Test partial failure handling (one service fails, others succeed)
-- Test dry-run mode produces no side effects
-- Test AsyncAPI spec detection
-- Test scorecard badge mapping
+- Wrapped each YAML file loading in the first pass with try/catch — failed files are logged and skipped
+- Wrapped each service's processing in the second pass with try/catch — failed services are logged and skipped
+- Added success/failure counters that track processing outcomes
+- At the end of processing, prints a summary: `Succeeded: N, Failed: M` with individual failure details
+
+One new test verifies:
+
+- ✅ Continues processing when one service fails (nonexistent YAML file) and remaining services succeed
+
+### 6.4 — Dry-run mode ✅
+
+**Files modified**: `src/types.ts`, `src/validation.ts`, `src/index.ts`
+
+**What was implemented:**
+
+- Added optional `dryRun?: boolean` to `GeneratorProps` in `src/types.ts`
+- Added `z.boolean().optional()` to the Zod schema in `src/validation.ts`
+- Updated `src/index.ts`: when `dryRun` is true:
+  - Logs `[DRY RUN]` prefix messages describing what would be written
+  - Skips all `writeService()`, `writeTeam()`, and `addServiceToDomain()` calls
+  - Prints service details (badges, dependencies) for preview
+  - Prints `[DRY RUN] No changes were written.` at the end
+
+Four new tests verify:
+
+- ✅ Services are not written when dryRun is true
+- ✅ Teams are not written when dryRun is true
+- ✅ Domain services are not modified when dryRun is true
+- ✅ Zod validation accepts dryRun option
+
+### 6.5 — AsyncAPI spec support ✅
+
+**Files modified**: `src/service.ts`
+
+**What was implemented:**
+
+- Renamed `getOpenApiSpecifications()` to `getSpecifications()` and extended it to detect AsyncAPI links
+- Links with names containing "asyncapi" (case-insensitive) are mapped to `{ type: 'asyncapi', path, name }` specification entries
+- URLs are sanitized through `sanitizeUrl()` (same XSS prevention as OpenAPI URLs)
+- Added `SpecType` type alias (`'openapi' | 'asyncapi'`) for type safety with the SDK's `Specification` type
+
+Three new tests verify:
+
+- ✅ Links with "asyncapi" in name are attached as asyncapi specifications
+- ✅ OpenAPI detection still works alongside AsyncAPI detection
+- ✅ Services without asyncapi/openapi links have no specifications
+
+### 6.6 — Scorecard-to-badge mapping ✅
+
+**Files modified**: `src/compass.ts`, `src/compass-api.ts`, `src/service.ts`
+
+**What was implemented:**
+
+- Added `ScorecardScore` type to `src/compass.ts`: `{ name: string; score: number; maxScore: number }`
+- Added optional `scorecards` field to `CompassConfig`
+- Extended the GraphQL query in `src/compass-api.ts` to fetch `scorecardScores { scorecard { name } score maxScore }`
+- Updated `mapComponent()` in `src/compass-api.ts` to map scorecard data to `CompassConfig.scorecards`
+- Updated `buildBadges()` in `src/service.ts` to create color-coded badges from scorecard data:
+  - ≥80%: green (`#22c55e`)
+  - ≥50%: amber (`#f59e0b`)
+  - <50%: red (`#ef4444`)
+  - Badge content format: `"ScorecardName: XX%"`
+- Handles edge case of `maxScore: 0` gracefully (shows 0%)
+
+Seven new tests verify:
+
+- ✅ High score (85%) creates green badge
+- ✅ Medium score (60%) creates amber badge
+- ✅ Low score (20%) creates red badge
+- ✅ Multiple scorecards create multiple badges
+- ✅ `maxScore: 0` handled gracefully
+- ✅ Scorecard scores mapped from API response
+- ✅ Components without scorecards have no scorecard badges
+
+### 6.7 — Tests for Phase 6 ✅
+
+30 new tests added across two test files (69 in plugin.test.ts, 30 in compass-api.test.ts = 99 total):
+
+- ✅ Team enrichment: 4 tests in compass-api.test.ts + 2 integration tests
+- ✅ Service ID strategy: 4 tests in plugin.test.ts + 3 Zod validation tests
+- ✅ Error resilience: 1 test in plugin.test.ts
+- ✅ Dry-run mode: 4 tests in plugin.test.ts
+- ✅ AsyncAPI specs: 3 tests in plugin.test.ts
+- ✅ Scorecard badges: 5 unit tests in plugin.test.ts + 3 API tests in compass-api.test.ts
+
+New test fixtures:
+
+- `my-asyncapi-service-compass.yml` — SERVICE with AsyncAPI link
+- `malformed-compass.yml` — Service with invalid data (for resilience testing)
 
 ---
 
@@ -513,7 +611,7 @@ Map Compass scorecard scores to EventCatalog badges. When a component has scorec
 | 3     | 0.3.0   | No                                                    | Relationship mapping                        | ✅ Complete |
 | 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ✅ Complete |
 | 5     | 0.5.0   | No                                                    | Custom templates, MDX, teams, OpenAPI specs | ✅ Complete |
-| 6     | 0.6.0   | No                                                    | Polish, resilience, DX improvements         | ⏳ Planned  |
+| 6     | 0.6.0   | No                                                    | Polish, resilience, DX improvements         | ✅ Complete |
 
 ---
 
@@ -521,22 +619,24 @@ Map Compass scorecard scores to EventCatalog badges. When a component has scorec
 
 ```
 src/
-├── index.ts          # Main generator entry point (modified in phases 1-5)
-├── types.ts          # GeneratorProps, ResolvedDependency, MarkdownTemplateFn, re-export SDK types (modified in phases 1-5)
-├── compass.ts        # YAML parser + CompassConfig type (modified in phase 2)
-├── compass-api.ts    # Compass GraphQL API client (phase 4)
-├── service.ts        # loadService with badge/metadata/dependency/spec mapping (modified in phases 1-3, 5)
+├── index.ts          # Main generator entry point (modified in phases 1-6)
+├── types.ts          # GeneratorProps, ResolvedDependency, MarkdownTemplateFn, ServiceIdStrategy, re-export SDK types (modified in phases 1-6)
+├── compass.ts        # YAML parser + CompassConfig type with ScorecardScore (modified in phases 2, 6)
+├── compass-api.ts    # Compass GraphQL API client with team fetching and scorecards (phases 4, 6)
+├── service.ts        # loadService with badge/metadata/dependency/spec/scorecard mapping (modified in phases 1-3, 5-6)
 ├── domain.ts         # Domain processing (minimal changes)
-├── validation.ts     # Zod schemas (phases 1, 5)
+├── validation.ts     # Zod schemas (phases 1, 5-6)
 └── test/
-    ├── plugin.test.ts                    # Main tests (extended each phase, 49 tests)
+    ├── plugin.test.ts                    # Main tests (extended each phase, 69 tests)
+    ├── compass-api.test.ts              # API client tests (phases 4, 6 — 30 tests)
     ├── my-service-compass.yml            # SERVICE fixture (with DEPENDS_ON refs)
     ├── my-application-compass.yml        # APPLICATION fixture (with DEPENDS_ON refs)
     ├── my-library-compass.yml            # LIBRARY fixture
     ├── my-capability-compass.yml         # CAPABILITY fixture
     ├── my-other-compass.notsupported.yml # OTHER fixture (with partial DEPENDS_ON refs)
     ├── my-openapi-service-compass.yml    # SERVICE fixture with OpenAPI/Swagger links (phase 5)
-    └── compass-api.test.ts              # API client tests (phase 4, 21 tests)
+    ├── my-asyncapi-service-compass.yml   # SERVICE fixture with AsyncAPI link (phase 6)
+    └── malformed-compass.yml            # Malformed fixture for error resilience testing (phase 6)
 ```
 
 ---

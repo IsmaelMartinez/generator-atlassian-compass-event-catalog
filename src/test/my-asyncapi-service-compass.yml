@@ -1,0 +1,16 @@
+configVersion: 1
+name: my-asyncapi-service
+id: 'ari:cloud:compass:a0000000-b000-c000-d000-e00000000000:component/44444444-4444-4444-4444-444444444444/44444444-4444-4444-4444-444444444444'
+description: A service with AsyncAPI spec links.
+ownerId: 'ari:cloud:teams::team/11111111-1111-1111-1111-111111111111'
+typeId: SERVICE
+fields:
+  tier: 2
+  lifecycle: Active
+links:
+  - name: AsyncAPI Events Spec
+    type: OTHER_LINK
+    url: 'https://api.example.com/asyncapi.yaml'
+  - name: Service repository
+    type: REPOSITORY
+    url: 'https://www.example.com/repos/my-asyncapi-service-repo'

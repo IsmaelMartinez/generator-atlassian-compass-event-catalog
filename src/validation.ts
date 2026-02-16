@@ -23,6 +23,8 @@ const ApiConfigSchema = z.object({
   typeFilter: z.array(z.string().min(1)).optional(),
 });
 
+const ServiceIdStrategySchema = z.union([z.enum(['name', 'compass-id']), z.function()]);
+
 export const GeneratorPropsSchema = z
   .object({
     services: z.array(ServiceOptionsSchema).min(1, 'At least one service is required').optional(),
@@ -34,6 +36,8 @@ export const GeneratorPropsSchema = z
     typeFilter: z.array(z.string().min(1)).optional(),
     markdownTemplate: z.function().optional(),
     format: z.enum(['md', 'mdx']).optional(),
+    serviceIdStrategy: ServiceIdStrategySchema.optional(),
+    dryRun: z.boolean().optional(),
   })
   .refine((data) => data.services || data.api, {
     message: 'Either "services" (YAML mode) or "api" (API mode) must be provided',

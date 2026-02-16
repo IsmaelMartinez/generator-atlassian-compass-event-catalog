@@ -1,6 +1,6 @@
 import { expect, it, describe, beforeEach, afterEach, vi } from 'vitest';
 import utils from '@eventcatalog/sdk';
-import { fetchComponents, resolveValue } from '../compass-api';
+import { fetchComponents, fetchTeamById, resolveValue } from '../compass-api';
 import plugin from '../index';
 import { join } from 'node:path';
 import fs from 'fs/promises';
@@ -49,7 +49,23 @@ function makeComponent(overrides: Partial<Record<string, unknown>> = {}) {
     relationships: null,
     labels: null,
     customFields: null,
+    scorecardScores: null,
     ...overrides,
+  };
+}
+
+function makeTeamResponse(team: { teamId: string; displayName: string } | null) {
+  return {
+    ok: true,
+    json: async () => ({
+      data: {
+        team: {
+          teamById: {
+            team,
+          },
+        },
+      },
+    }),
   };
 }
 
@@ -345,6 +361,165 @@ describe('Compass API client', () => {
       const domain = await getDomain('api-domain', '1.0.0');
       expect(domain).toBeDefined();
       expect(domain.services).toContainEqual({ id: 'domain-api-service', version: '0.0.0' });
+    });
+  });
+
+  describe('fetchTeamById', () => {
+    it('fetches team display name by ID', async () => {
+      mockFetch.mockResolvedValueOnce(makeTeamResponse({ teamId: 'team-uuid-123', displayName: 'Platform Team' }));
+
+      const team = await fetchTeamById(apiConfig, 'team-uuid-123');
+      expect(team).toEqual({ id: 'team-uuid-123', displayName: 'Platform Team' });
+    });
+
+    it('returns null when team is not found', async () => {
+      mockFetch.mockResolvedValueOnce(makeTeamResponse(null));
+
+      const team = await fetchTeamById(apiConfig, 'nonexistent-team');
+      expect(team).toBeNull();
+    });
+
+    it('returns null on HTTP error', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+
+      const team = await fetchTeamById(apiConfig, 'team-uuid-123');
+      expect(team).toBeNull();
+    });
+
+    it('returns null on GraphQL errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ errors: [{ message: 'Team not found' }] }),
+      });
+
+      const team = await fetchTeamById(apiConfig, 'team-uuid-123');
+      expect(team).toBeNull();
+    });
+  });
+
+  describe('scorecard mapping', () => {
+    it('maps scorecard scores from API response', async () => {
+      mockFetch.mockResolvedValueOnce(
+        makeSearchResponse([
+          makeComponent({
+            scorecardScores: [
+              { scorecard: { name: 'Health' }, score: 85, maxScore: 100 },
+              { scorecard: { name: 'Security' }, score: 60, maxScore: 100 },
+            ],
+          }),
+        ])
+      );
+
+      const components = await fetchComponents(apiConfig);
+      expect(components[0].scorecards).toHaveLength(2);
+      expect(components[0].scorecards?.[0]).toEqual({ name: 'Health', score: 85, maxScore: 100 });
+      expect(components[0].scorecards?.[1]).toEqual({ name: 'Security', score: 60, maxScore: 100 });
+    });
+
+    it('handles components with no scorecard scores', async () => {
+      mockFetch.mockResolvedValueOnce(makeSearchResponse([makeComponent()]));
+
+      const components = await fetchComponents(apiConfig);
+      expect(components[0].scorecards).toBeUndefined();
+    });
+  });
+
+  describe('API mode: team enrichment', () => {
+    let catalogDir: string;
+
+    beforeEach(() => {
+      catalogDir = join(__dirname, 'catalog-api-teams');
+      process.env.PROJECT_DIR = catalogDir;
+    });
+
+    afterEach(async () => {
+      await fs.rm(catalogDir, { recursive: true, force: true });
+    });
+
+    it('enriches team name from Compass API in API mode', async () => {
+      // First call: fetchComponents
+      mockFetch.mockResolvedValueOnce(
+        makeSearchResponse([
+          makeComponent({
+            name: 'team-enriched-service',
+            ownerId: 'ari:cloud:teams:test:team/team-uuid-456',
+          }),
+        ])
+      );
+      // Second call: fetchTeamById
+      mockFetch.mockResolvedValueOnce(makeTeamResponse({ teamId: 'team-uuid-456', displayName: 'Engineering Squad' }));
+
+      await plugin(eventCatalogConfig, {
+        api: apiConfig,
+        compassUrl: 'https://test.atlassian.net/compass',
+      });
+
+      const { getTeam } = utils(catalogDir);
+      const team = await getTeam('team-uuid-456');
+      expect(team).toBeDefined();
+      expect(team.name).toBe('Engineering Squad');
+    });
+
+    it('falls back to UUID when team fetch fails', async () => {
+      // First call: fetchComponents
+      mockFetch.mockResolvedValueOnce(
+        makeSearchResponse([
+          makeComponent({
+            name: 'team-fallback-service',
+            ownerId: 'ari:cloud:teams:test:team/team-uuid-789',
+          }),
+        ])
+      );
+      // Second call: fetchTeamById fails
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+
+      await plugin(eventCatalogConfig, {
+        api: apiConfig,
+        compassUrl: 'https://test.atlassian.net/compass',
+      });
+
+      const { getTeam } = utils(catalogDir);
+      const team = await getTeam('team-uuid-789');
+      expect(team).toBeDefined();
+      expect(team.name).toBe('team-uuid-789');
+    });
+  });
+
+  describe('API mode: scorecard badges integration', () => {
+    let catalogDir: string;
+
+    beforeEach(() => {
+      catalogDir = join(__dirname, 'catalog-api-scorecards');
+      process.env.PROJECT_DIR = catalogDir;
+    });
+
+    afterEach(async () => {
+      await fs.rm(catalogDir, { recursive: true, force: true });
+    });
+
+    it('creates scorecard badges from API-fetched components', async () => {
+      mockFetch.mockResolvedValueOnce(
+        makeSearchResponse([
+          makeComponent({
+            name: 'scorecard-api-service',
+            scorecardScores: [{ scorecard: { name: 'Health' }, score: 90, maxScore: 100 }],
+          }),
+        ])
+      );
+
+      await plugin(eventCatalogConfig, {
+        api: apiConfig,
+        compassUrl: 'https://test.atlassian.net/compass',
+      });
+
+      const { getService } = utils(catalogDir);
+      const service = await getService('scorecard-api-service');
+      expect(service).toBeDefined();
+      expect(service.badges).toContainEqual({
+        content: 'Health: 90%',
+        backgroundColor: '#22c55e',
+        textColor: '#fff',
+      });
     });
   });
 });

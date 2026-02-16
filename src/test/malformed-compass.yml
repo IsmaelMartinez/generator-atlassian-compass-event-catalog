@@ -1,0 +1,10 @@
+configVersion: 1
+name: malformed-service
+typeId: SERVICE
+fields:
+  tier: invalid_not_a_number
+  lifecycle: Active
+links:
+  - name: Bad link
+    type: INVALID_TYPE
+    url: 'not-a-valid-url:::bad'

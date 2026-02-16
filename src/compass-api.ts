@@ -14,6 +14,14 @@ type GraphQLField = {
   value?: string; // via ... on CompassEnumField { value }
 };
 
+type GraphQLScorecardScore = {
+  scorecard: {
+    name: string;
+  };
+  score: number;
+  maxScore: number;
+};
+
 type GraphQLComponent = {
   id: string;
   name: string;
@@ -39,6 +47,7 @@ type GraphQLComponent = {
     booleanValue?: boolean;
     numberValue?: number;
   }> | null;
+  scorecardScores: GraphQLScorecardScore[] | null;
 };
 
 type SearchComponentsResponse = {
@@ -97,6 +106,11 @@ const SEARCH_COMPONENTS_QUERY = `
                 textValue
                 booleanValue
                 numberValue
+              }
+              scorecardScores {
+                scorecard { name }
+                score
+                maxScore
               }
             }
           }
@@ -198,7 +212,83 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
     }));
   }
 
+  if (component.scorecardScores && component.scorecardScores.length > 0) {
+    config.scorecards = component.scorecardScores.map((sc) => ({
+      name: sc.scorecard.name,
+      score: sc.score,
+      maxScore: sc.maxScore,
+    }));
+  }
+
   return config;
+}
+
+// GraphQL query to fetch a team's display name by team ID
+const GET_TEAM_QUERY = `
+  query getTeam($teamId: String!) {
+    team {
+      teamById(teamId: $teamId) {
+        team {
+          teamId
+          displayName
+        }
+      }
+    }
+  }
+`;
+
+type GetTeamResponse = {
+  data?: {
+    team: {
+      teamById: {
+        team: {
+          teamId: string;
+          displayName: string;
+        } | null;
+      };
+    };
+  };
+  errors?: Array<{ message: string }>;
+};
+
+export async function fetchTeamById(
+  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl'>,
+  teamId: string
+): Promise<{ id: string; displayName: string } | null> {
+  const resolvedToken = resolveValue(config.apiToken);
+  const resolvedEmail = resolveValue(config.email);
+  const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
+  const authHeader = buildAuthHeader(resolvedEmail, resolvedToken);
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authHeader,
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      query: GET_TEAM_QUERY,
+      variables: { teamId },
+    }),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const result = (await response.json()) as GetTeamResponse;
+
+  if (result.errors || !result.data) {
+    return null;
+  }
+
+  const team = result.data.team.teamById.team;
+  if (!team) {
+    return null;
+  }
+
+  return { id: team.teamId, displayName: team.displayName };
 }
 
 export async function fetchComponents(config: ApiConfig): Promise<CompassConfig[]> {
