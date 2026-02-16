@@ -1,7 +1,7 @@
 import utils from '@eventcatalog/sdk';
 import chalk from 'chalk';
 import { loadConfig, CompassConfig } from './compass';
-import { loadService } from './service';
+import { loadService, extractTeamId } from './service';
 import Domain from './domain';
 import { GeneratorProps, ResolvedDependency } from './types';
 import { GeneratorPropsSchema } from './validation';
@@ -33,22 +33,34 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
 
   if (options.debug) {
     console.debug(chalk.magenta('Configuration provided', JSON.stringify(_config)));
-    const { api, ...safeOptions } = options;
+    const { api, markdownTemplate: _tpl, ...safeOptions } = options;
     if (api) {
       const { apiToken: _token, email: _email, ...safeApi } = api;
       console.debug(
         chalk.magenta(
           'Generator properties',
-          JSON.stringify({ ...safeOptions, api: { ...safeApi, apiToken: '***', email: '***' } })
+          JSON.stringify({
+            ...safeOptions,
+            api: { ...safeApi, apiToken: '***', email: '***' },
+            markdownTemplate: _tpl ? '[Function]' : undefined,
+          })
         )
       );
     } else {
-      console.debug(chalk.magenta('Generator properties', JSON.stringify(safeOptions)));
+      console.debug(
+        chalk.magenta(
+          'Generator properties',
+          JSON.stringify({ ...safeOptions, markdownTemplate: _tpl ? '[Function]' : undefined })
+        )
+      );
     }
   }
 
   // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
-  const { getService, writeService } = utils(projectDir);
+  const { getService, writeService, writeTeam } = utils(projectDir);
+
+  const format = options.format || 'mdx';
+  const teamsWritten = new Set<string>();
 
   let domain = null;
 
@@ -130,14 +142,34 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
       }
     }
 
+    // Write team entity if ownerId is present and not yet written
+    if (compassConfig.ownerId) {
+      const rawTeamId = extractTeamId(compassConfig.ownerId);
+      if (rawTeamId) {
+        const teamId = sanitizeId(rawTeamId);
+        if (!teamsWritten.has(teamId)) {
+          await writeTeam({ id: teamId, name: teamId, markdown: '' }, { override: true });
+          teamsWritten.add(teamId);
+          console.log(chalk.cyan(` - Team ${teamId} created`));
+        }
+      }
+    }
+
     const existing = await getService(serviceId);
-    const compassService = loadService(compassConfig, options.compassUrl.replace(/\/$/, ''), version, serviceId, dependencies);
+    const compassService = loadService(
+      compassConfig,
+      options.compassUrl.replace(/\/$/, ''),
+      version,
+      serviceId,
+      dependencies,
+      options.markdownTemplate
+    );
 
     if (existing && options.overrideExisting !== false) {
-      await writeService(compassService, { override: true });
+      await writeService(compassService, { override: true, format });
       console.log(chalk.cyan(` - Service ${compassConfig.name} updated`));
     } else if (!existing) {
-      await writeService(compassService);
+      await writeService(compassService, { format });
       console.log(chalk.cyan(` - Service ${compassConfig.name} created`));
     } else {
       console.log(chalk.yellow(` - Service ${compassConfig.name} skipped (already exists)`));

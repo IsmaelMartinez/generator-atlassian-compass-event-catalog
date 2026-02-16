@@ -32,6 +32,8 @@ export const GeneratorPropsSchema = z
     debug: z.boolean().optional(),
     overrideExisting: z.boolean().optional(),
     typeFilter: z.array(z.string().min(1)).optional(),
+    markdownTemplate: z.function().optional(),
+    format: z.enum(['md', 'mdx']).optional(),
   })
   .refine((data) => data.services || data.api, {
     message: 'Either "services" (YAML mode) or "api" (API mode) must be provided',

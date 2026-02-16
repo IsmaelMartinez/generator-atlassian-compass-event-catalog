@@ -366,30 +366,128 @@ Helper functions were added to handle the corrected shapes: `extractField()` sea
 
 ---
 
-## Phase 5: Advanced Features
+## Phase 5: Advanced Features ✅ COMPLETE
 
 **Release**: v0.5.0
 **Effort**: Medium
 
-### 5.1 — Attach OpenAPI specs
+### 5.1 — Custom markdown templates ✅
 
-If a Compass component has API specifications (available via the API since the Optic acquisition), attach them to the EventCatalog service using `addFileToService()` or the `specifications` field on `Service`.
+**Files modified**: `src/types.ts`, `src/validation.ts`, `src/service.ts`, `src/index.ts`
 
-### 5.2 — Map scorecards to metadata
+**What was implemented:**
 
-Compass scorecards track component health. Map scorecard scores to EventCatalog badges or custom metadata so teams can see health status in EventCatalog.
+- Added `MarkdownTemplateFn` type to `src/types.ts`: `(config: CompassConfig, dependencies: ResolvedDependency[]) => string`
+- Added optional `markdownTemplate` field to `GeneratorProps`
+- Updated Zod schema in `src/validation.ts` with `z.function().optional()` for the template
+- Updated `loadService()` in `src/service.ts` to accept an optional `customMarkdownTemplate` parameter; when provided, it is called instead of `defaultMarkdown()`
+- Updated `src/index.ts` to pass `options.markdownTemplate` through to `loadService()`
 
-### 5.3 — Custom markdown templates
+Three new tests verify:
 
-Add an optional `markdownTemplate` function to `GeneratorProps` that lets users customize the generated markdown per service. Falls back to `defaultMarkdown` if not provided.
+- ✅ Custom template is used when provided (replaces default markdown)
+- ✅ Resolved dependencies are passed to the custom template function
+- ✅ Falls back to `defaultMarkdown` when template is not provided
 
-### 5.4 — EventCatalog v3: MDX format support
+### 5.2 — MDX format support ✅
 
-The `writeService` SDK function accepts `{ format: 'mdx' }`. Add a `format` option to `GeneratorProps` (default: `'mdx'` for v3 compatibility).
+**Files modified**: `src/types.ts`, `src/validation.ts`, `src/index.ts`
 
-### 5.5 — EventCatalog v3: Teams and Users
+**What was implemented:**
 
-If Compass provides team/owner data via the API, use `writeTeam()` and `writeUser()` from the SDK to create corresponding entities in EventCatalog, not just string references.
+- Added optional `format` field (`'md' | 'mdx'`) to `GeneratorProps` in `src/types.ts`
+- Added `z.enum(['md', 'mdx']).optional()` to the Zod schema in `src/validation.ts`
+- Updated `src/index.ts` to pass `{ format }` to all `writeService()` calls (defaults to `'mdx'`)
+
+Four new tests verify:
+
+- ✅ Default format works (mdx)
+- ✅ `format: 'md'` option is accepted
+- ✅ `format: 'mdx'` option is accepted
+- ✅ Invalid format values are rejected by Zod validation
+
+### 5.3 — Teams ✅
+
+**Files modified**: `src/index.ts`, `src/service.ts`
+
+**What was implemented:**
+
+- Updated `src/index.ts` to extract `writeTeam` from the SDK
+- Extracted shared `extractTeamId()` helper in `src/service.ts` to parse team UUID from ownerId ARN (eliminates duplicated ARN parsing logic)
+- In the second pass, before writing each service, extracts team ID from `ownerId` ARN (UUID after `team/`)
+- Team IDs are sanitized via `sanitizeId()` to prevent path traversal (security fix from review)
+- Uses a `Set<string>` to track already-written team IDs for deduplication
+- Calls `writeTeam({ id, name, markdown }, { override: true })` for each unique team
+- Teams are referenced by ID in the service's `owners` array (existing behavior preserved)
+
+Three new tests verify:
+
+- ✅ Team entity is created from service ownerId
+- ✅ Teams are deduplicated when multiple services share the same owner
+- ✅ Separate teams are created for different ownerIds
+
+### 5.4 — Attach OpenAPI specs from links ✅
+
+**Files modified**: `src/service.ts`
+
+**What was implemented:**
+
+- Added `getOpenApiSpecifications()` function in `src/service.ts` that scans a component's links for names containing "openapi" or "swagger" (case-insensitive)
+- Matching links are mapped to `{ type: 'openapi', path: <sanitized URL>, name: <link name> }` specification entries
+- URLs are sanitized through `sanitizeUrl()` (same XSS prevention as other URLs)
+- Specifications are added to the `Service` object only when matches are found
+
+Three new tests verify:
+
+- ✅ Links with "openapi" in name are attached as specifications
+- ✅ Links with "swagger" in name are attached as specifications
+- ✅ Services without openapi/swagger links have no specifications
+
+---
+
+## Phase 6: Polish, Resilience & DX
+
+**Release**: v0.6.0
+**Effort**: Medium
+
+### 6.1 — Enrich team entities with Compass team data
+
+Currently teams are written with `{ id: teamId, name: teamId, markdown: '' }` — the name is just the UUID, which isn't user-friendly. When using API mode, fetch team details from the Compass Teams API (or resolve from component metadata) to populate `name` with an actual team display name. In YAML mode, the ownerId ARN is all we have, so the UUID fallback remains.
+
+### 6.2 — Configurable service ID strategy
+
+Currently service IDs come from `file.id || compassConfig.name` (YAML mode) or `config.name` (API mode), then sanitized. Add an optional `serviceIdStrategy` to `GeneratorProps`:
+
+- `'name'` (default): use component name
+- `'compass-id'`: use the Compass component ID (ARN), sanitized
+- A custom function `(config: CompassConfig) => string` for full control
+
+This gives users flexibility when component names aren't unique across teams.
+
+### 6.3 — Error resilience and partial failure handling
+
+Currently, if any single service fails to process (e.g., YAML parse error, SDK write failure), the entire generator run crashes. Wrap each service's processing in a try/catch, log the error, and continue with the remaining services. At the end, report a summary of successes and failures.
+
+### 6.4 — Dry-run mode
+
+Add a `dryRun?: boolean` option to `GeneratorProps`. When enabled, the generator processes all services and logs what _would_ be written (service name, version, badges, dependencies, teams) without actually calling `writeService()`, `writeTeam()`, or modifying the catalog. Useful for previewing changes before committing them.
+
+### 6.5 — AsyncAPI spec support
+
+Extend the OpenAPI link detection (Phase 5.4) to also detect AsyncAPI specifications. Links with names containing "asyncapi" are mapped to `{ type: 'asyncapi', path, name }`. This complements the OpenAPI support for event-driven architectures.
+
+### 6.6 — Scorecard-to-badge mapping
+
+Map Compass scorecard scores to EventCatalog badges. When a component has scorecard data (available via the API), create badges like `{ content: "Health: 85%", backgroundColor: "#22c55e", textColor: "#fff" }`. This requires extending the GraphQL query to fetch scorecard data and adding a mapping function.
+
+### 6.7 — Tests for Phase 6
+
+- Test team name enrichment in API mode
+- Test each service ID strategy option
+- Test partial failure handling (one service fails, others succeed)
+- Test dry-run mode produces no side effects
+- Test AsyncAPI spec detection
+- Test scorecard badge mapping
 
 ---
 
@@ -402,6 +500,7 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 | 3     | —                                      | —                    |
 | 4     | `node-fetch` (if needed for API calls) | —                    |
 | 5     | —                                      | —                    |
+| 6     | —                                      | —                    |
 
 ---
 
@@ -413,7 +512,8 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 | 2     | 0.2.0   | No (previously errored types now work)                | All Compass types supported                 | ✅ Complete |
 | 3     | 0.3.0   | No                                                    | Relationship mapping                        | ✅ Complete |
 | 4     | 0.4.0   | No (API mode is opt-in)                               | Compass API integration                     | ✅ Complete |
-| 5     | 0.5.0   | No                                                    | OpenAPI specs, scorecards, MDX, teams       | ⏳ Planned  |
+| 5     | 0.5.0   | No                                                    | Custom templates, MDX, teams, OpenAPI specs | ✅ Complete |
+| 6     | 0.6.0   | No                                                    | Polish, resilience, DX improvements         | ⏳ Planned  |
 
 ---
 
@@ -421,20 +521,21 @@ If Compass provides team/owner data via the API, use `writeTeam()` and `writeUse
 
 ```
 src/
-├── index.ts          # Main generator entry point (modified in phases 1-4)
-├── types.ts          # GeneratorProps, ResolvedDependency, re-export SDK types (modified in phases 1-3, 4)
+├── index.ts          # Main generator entry point (modified in phases 1-5)
+├── types.ts          # GeneratorProps, ResolvedDependency, MarkdownTemplateFn, re-export SDK types (modified in phases 1-5)
 ├── compass.ts        # YAML parser + CompassConfig type (modified in phase 2)
-├── compass-api.ts    # NEW: Compass GraphQL API client (phase 4)
-├── service.ts        # loadService with badge/metadata/dependency mapping (modified in phases 1-3)
+├── compass-api.ts    # Compass GraphQL API client (phase 4)
+├── service.ts        # loadService with badge/metadata/dependency/spec mapping (modified in phases 1-3, 5)
 ├── domain.ts         # Domain processing (minimal changes)
-├── validation.ts     # Zod schemas (phase 1)
+├── validation.ts     # Zod schemas (phases 1, 5)
 └── test/
-    ├── plugin.test.ts                    # Main tests (extended each phase, 36 tests)
+    ├── plugin.test.ts                    # Main tests (extended each phase, 49 tests)
     ├── my-service-compass.yml            # SERVICE fixture (with DEPENDS_ON refs)
     ├── my-application-compass.yml        # APPLICATION fixture (with DEPENDS_ON refs)
     ├── my-library-compass.yml            # LIBRARY fixture
     ├── my-capability-compass.yml         # CAPABILITY fixture
     ├── my-other-compass.notsupported.yml # OTHER fixture (with partial DEPENDS_ON refs)
+    ├── my-openapi-service-compass.yml    # SERVICE fixture with OpenAPI/Swagger links (phase 5)
     └── compass-api.test.ts              # API client tests (phase 4, 21 tests)
 ```
 
