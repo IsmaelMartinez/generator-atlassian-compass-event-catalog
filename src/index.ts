@@ -33,7 +33,18 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
 
   if (options.debug) {
     console.debug(chalk.magenta('Configuration provided', JSON.stringify(_config)));
-    console.debug(chalk.magenta('Generator properties', JSON.stringify(options)));
+    const { api, ...safeOptions } = options;
+    if (api) {
+      const { apiToken: _token, email: _email, ...safeApi } = api;
+      console.debug(
+        chalk.magenta(
+          'Generator properties',
+          JSON.stringify({ ...safeOptions, api: { ...safeApi, apiToken: '***', email: '***' } })
+        )
+      );
+    } else {
+      console.debug(chalk.magenta('Generator properties', JSON.stringify(safeOptions)));
+    }
   }
 
   // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
