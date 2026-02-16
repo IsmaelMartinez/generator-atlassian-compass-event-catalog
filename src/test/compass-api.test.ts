@@ -41,7 +41,7 @@ function makeComponent(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: 'ari:cloud:compass:test:component/test-1',
     name: 'test-service',
-    type: 'SERVICE',
+    typeId: 'SERVICE',
     description: 'A test service',
     ownerId: null,
     fields: null,
@@ -81,9 +81,12 @@ describe('Compass API client', () => {
           makeComponent({
             description: 'A test service',
             ownerId: 'ari:cloud:teams:test:team/team-uuid',
-            fields: { lifecycle: { label: 'Active' }, tier: { label: 'Tier 1' } },
+            fields: [
+              { definition: { name: 'lifecycle' }, value: 'Active' },
+              { definition: { name: 'tier' }, value: 'Tier 1' },
+            ],
             links: [{ type: 'REPOSITORY', url: 'https://github.com/test/repo', name: 'Repo' }],
-            labels: ['test-label'],
+            labels: [{ name: 'test-label' }],
           }),
         ])
       );
@@ -109,8 +112,8 @@ describe('Compass API client', () => {
           makeComponent({
             relationships: {
               nodes: [
-                { type: 'DEPENDS_ON', endNodeAri: 'ari:cloud:compass:test:component/dep-1' },
-                { type: 'DEPENDS_ON', endNodeAri: 'ari:cloud:compass:test:component/dep-2' },
+                { type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/dep-1' },
+                { type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/dep-2' },
               ],
             },
           }),
@@ -141,7 +144,7 @@ describe('Compass API client', () => {
     it('handles pagination across multiple pages', async () => {
       mockFetch
         .mockResolvedValueOnce(makeSearchResponse([makeComponent({ name: 'service-1' })], true, 'cursor-1'))
-        .mockResolvedValueOnce(makeSearchResponse([makeComponent({ name: 'service-2', type: 'APPLICATION' })]));
+        .mockResolvedValueOnce(makeSearchResponse([makeComponent({ name: 'service-2', typeId: 'APPLICATION' })]));
 
       const components = await fetchComponents(apiConfig);
       expect(components).toHaveLength(2);
@@ -272,7 +275,7 @@ describe('Compass API client', () => {
             id: 'ari:cloud:compass:test:component/api-svc',
             name: 'api-test-service',
             description: 'Test service from API',
-            fields: { lifecycle: { label: 'Active' }, tier: null },
+            fields: [{ definition: { name: 'lifecycle' }, value: 'Active' }],
           }),
         ])
       );
@@ -301,7 +304,7 @@ describe('Compass API client', () => {
             id: 'ari:cloud:compass:test:component/svc-a',
             name: 'service-a',
             relationships: {
-              nodes: [{ type: 'DEPENDS_ON', endNodeAri: 'ari:cloud:compass:test:component/svc-b' }],
+              nodes: [{ type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/svc-b' }],
             },
           }),
           makeComponent({

@@ -6,17 +6,21 @@ type LinkType = NonNullable<CompassConfig['links']>[number]['type'];
 type FieldType = NonNullable<CompassConfig['fields']>;
 type CustomFieldType = NonNullable<CompassConfig['customFields']>[number]['type'];
 
-// GraphQL response types
+// GraphQL response types — validated against Atlassian Compass API documentation
+// and community examples (see https://community.atlassian.com/forums/Compass-questions/
+// graphql-to-search-for-all-components/qaq-p/2472308)
+type GraphQLField = {
+  definition: { name: string };
+  value?: string; // via ... on CompassEnumField { value }
+};
+
 type GraphQLComponent = {
   id: string;
   name: string;
-  type: string;
+  typeId: string;
   description: string | null;
   ownerId: string | null;
-  fields: {
-    lifecycle: { label: string } | null;
-    tier: { label: string } | null;
-  } | null;
+  fields: GraphQLField[] | null;
   links: Array<{
     type: string;
     url: string;
@@ -25,10 +29,10 @@ type GraphQLComponent = {
   relationships: {
     nodes: Array<{
       type: string;
-      endNodeAri: string;
+      nodeId: string;
     }>;
   } | null;
-  labels: string[] | null;
+  labels: Array<{ name: string }> | null;
   customFields: Array<{
     definition: { name: string; type: string };
     textValue?: string;
@@ -52,6 +56,11 @@ type SearchComponentsResponse = {
   errors?: Array<{ message: string }>;
 };
 
+// Query validated against Compass GraphQL API docs. Key corrections from docs:
+// - Component type field is `typeId` (not `type`)
+// - Labels are objects: `labels { name }` (not plain strings)
+// - Lifecycle/tier use CompassEnumField fragment: `fields { definition { name } ... on CompassEnumField { value } }`
+// - Relationship nodes use `nodeId` (matching creation API input)
 const SEARCH_COMPONENTS_QUERY = `
   query searchComponents($cloudId: String!, $after: String, $types: [CompassComponentType!]) {
     compass {
@@ -64,25 +73,25 @@ const SEARCH_COMPONENTS_QUERY = `
             component {
               id
               name
-              type
+              typeId
               description
               ownerId
               fields {
-                lifecycle { label }
-                tier { label }
+                definition { name }
+                ... on CompassEnumField { value }
               }
               links {
                 type
                 url
                 name
               }
-              relationships(type: DEPENDS_ON) {
+              relationships {
                 nodes {
                   type
-                  endNodeAri
+                  nodeId
                 }
               }
-              labels
+              labels { name }
               customFields {
                 definition { name type }
                 textValue
@@ -115,9 +124,9 @@ function buildAuthHeader(email: string, apiToken: string): string {
   return `Basic ${Buffer.from(`${email}:${apiToken}`).toString('base64')}`;
 }
 
-function mapTier(label: string | null | undefined): 1 | 2 | 3 | 4 | undefined {
-  if (!label) return undefined;
-  const match = label.match(/(\d)/);
+function mapTier(value: string | null | undefined): 1 | 2 | 3 | 4 | undefined {
+  if (!value) return undefined;
+  const match = value.match(/(\d)/);
   if (match) {
     const num = parseInt(match[1], 10);
     if (num >= 1 && num <= 4) return num as 1 | 2 | 3 | 4;
@@ -125,14 +134,23 @@ function mapTier(label: string | null | undefined): 1 | 2 | 3 | 4 | undefined {
   return undefined;
 }
 
-function mapLifecycle(label: string | null | undefined): string | undefined {
-  if (!label) return undefined;
+function mapLifecycle(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  // API may return uppercase (ACTIVE) or title case (Active) — normalize both
+  const normalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
   const valid: Record<string, string> = {
     Active: 'Active',
     'Pre-release': 'Pre-release',
+    Prerelease: 'Pre-release',
     Deprecated: 'Deprecated',
   };
-  return valid[label];
+  return valid[normalized] || valid[value];
+}
+
+function extractField(fields: GraphQLField[] | null, fieldName: string): string | undefined {
+  if (!fields) return undefined;
+  const field = fields.find((f) => f.definition.name.toLowerCase() === fieldName.toLowerCase());
+  return field?.value || undefined;
 }
 
 function mapComponent(component: GraphQLComponent): CompassConfig {
@@ -140,15 +158,15 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
     name: component.name,
     id: component.id,
     description: component.description || undefined,
-    typeId: component.type as CompassConfig['typeId'],
+    typeId: component.typeId as CompassConfig['typeId'],
   };
 
   if (component.ownerId) {
     config.ownerId = component.ownerId;
   }
 
-  const lifecycle = mapLifecycle(component.fields?.lifecycle?.label);
-  const tier = mapTier(component.fields?.tier?.label);
+  const lifecycle = mapLifecycle(extractField(component.fields, 'lifecycle'));
+  const tier = mapTier(extractField(component.fields, 'tier'));
   if (lifecycle || tier) {
     config.fields = { lifecycle: lifecycle as FieldType['lifecycle'], tier };
   }
@@ -162,14 +180,14 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
   }
 
   if (component.relationships?.nodes && component.relationships.nodes.length > 0) {
-    const dependsOn = component.relationships.nodes.filter((r) => r.type === 'DEPENDS_ON').map((r) => r.endNodeAri);
+    const dependsOn = component.relationships.nodes.filter((r) => r.type === 'DEPENDS_ON').map((r) => r.nodeId);
     if (dependsOn.length > 0) {
       config.relationships = { DEPENDS_ON: dependsOn };
     }
   }
 
   if (component.labels && component.labels.length > 0) {
-    config.labels = component.labels;
+    config.labels = component.labels.map((l) => l.name);
   }
 
   if (component.customFields && component.customFields.length > 0) {
