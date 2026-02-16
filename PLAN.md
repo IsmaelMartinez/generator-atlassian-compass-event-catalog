@@ -342,15 +342,27 @@ function resolveValue(value: string): string {
 }
 ```
 
-### 4.7 — Tests for Phase 4
+### 4.7 — Schema corrections (post-implementation validation)
 
-- Mock the GraphQL endpoint (use `msw` or simple fetch mock)
+After initial implementation, the GraphQL query and response types were validated against the Atlassian Compass API documentation and community examples. Four field-name mismatches were found and corrected:
+
+- Component type field is `typeId` (not `type`)
+- Labels are objects `{ name: string }` (not plain strings)
+- Lifecycle/tier fields use the `CompassEnumField` inline fragment: `fields { definition { name } ... on CompassEnumField { value } }` (not `{ lifecycle: { label }, tier: { label } }`)
+- Relationship nodes use `nodeId` (not `endNodeAri`)
+
+Helper functions were added to handle the corrected shapes: `extractField()` searches the fields array by definition name, `mapLifecycle()` normalizes both uppercase (ACTIVE) and title case (Active) values, and `mapTier()` extracts the numeric tier from strings like "Tier 1".
+
+### 4.8 — Tests for Phase 4
+
+- Mock the GraphQL endpoint (simple fetch mock via `vi.stubGlobal`)
 - Test that API mode fetches and processes components
 - Test pagination (multiple pages)
 - Test auth header is correctly formed
 - Test env var resolution
 - Test error handling (401, 403, 429 rate limit, network errors)
 - Test that YAML mode still works unchanged
+- All mocks use corrected response shapes matching actual API
 
 ---
 
