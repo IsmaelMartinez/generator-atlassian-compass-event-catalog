@@ -16,7 +16,10 @@ const ApiConfigSchema = z.object({
   cloudId: z.string().min(1, 'cloudId is required'),
   apiToken: z.string().min(1, 'apiToken is required'),
   email: z.string().min(1, 'email is required'),
-  baseUrl: z.string().url('baseUrl must be a valid URL'),
+  baseUrl: z
+    .string()
+    .url('baseUrl must be a valid URL')
+    .refine((url) => url.startsWith('https://'), { message: 'baseUrl must use HTTPS to protect API credentials' }),
   typeFilter: z.array(z.string().min(1)).optional(),
 });
 

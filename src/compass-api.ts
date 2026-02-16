@@ -176,7 +176,7 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
     config.customFields = component.customFields.map((cf) => ({
       type: cf.definition.type as CustomFieldType,
       name: cf.definition.name,
-      value: cf.textValue || String(cf.booleanValue ?? cf.numberValue ?? ''),
+      value: cf.textValue ?? String(cf.booleanValue ?? cf.numberValue ?? ''),
     }));
   }
 
