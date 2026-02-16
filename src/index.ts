@@ -12,6 +12,11 @@ function sanitizeId(id: string): string {
   return id.replace(/[^a-zA-Z0-9-_]/g, '-');
 }
 
+// Sanitize text to prevent HTML/markdown injection from untrusted API data
+function sanitizeText(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c);
+}
+
 // Resolve service ID based on strategy
 function resolveServiceId(config: CompassConfig, strategy: ServiceIdStrategy | undefined, fileId?: string): string {
   // If a file-level override ID is provided (YAML mode), it takes precedence
@@ -89,6 +94,8 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   // First pass: build processable entries from either API or YAML mode
   const serviceMap = new Map<string, { serviceId: string; name: string }>();
   const processableEntries: ProcessableEntry[] = [];
+  let loadFailureCount = 0;
+  const loadFailures: Array<{ name: string; error: string }> = [];
 
   if (options.api) {
     // API mode: fetch components from Compass GraphQL API
@@ -138,6 +145,8 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(chalk.red(`\n✗ Failed to load ${file.path}: ${errorMessage}`));
+        loadFailureCount++;
+        loadFailures.push({ name: file.path, error: errorMessage });
       }
     }
   }
@@ -145,8 +154,8 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   // Second pass: write services with resolved dependencies
   const dryRun = options.dryRun === true;
   let successCount = 0;
-  let failureCount = 0;
-  const failures: Array<{ name: string; error: string }> = [];
+  let failureCount = loadFailureCount;
+  const failures: Array<{ name: string; error: string }> = [...loadFailures];
 
   if (dryRun) {
     console.log(chalk.yellow('\n[DRY RUN] No changes will be written to the catalog.\n'));
@@ -188,12 +197,15 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
               try {
                 const teamData = await fetchTeamById(options.api, rawTeamId);
                 if (teamData?.displayName) {
-                  teamName = teamData.displayName;
+                  teamName = sanitizeText(teamData.displayName);
                 }
-              } catch {
+              } catch (error) {
                 // Fall back to UUID if team fetch fails
                 if (options.debug) {
-                  console.debug(chalk.magenta(` - Could not fetch team name for ${rawTeamId}, using UUID`));
+                  const errorMessage = error instanceof Error ? error.message : String(error);
+                  console.debug(
+                    chalk.magenta(` - Could not fetch team name for ${rawTeamId}, using UUID. Reason: ${errorMessage}`)
+                  );
                 }
               }
             }

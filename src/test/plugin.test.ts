@@ -1025,7 +1025,7 @@ describe('Atlassian Compass generator tests', () => {
   });
 
   describe('Phase 6: error resilience and partial failure handling', () => {
-    it('continues processing when one service fails and reports summary', async () => {
+    it('continues processing when one service fails (nonexistent file) and reports summary', async () => {
       const { getService } = utils(catalogDir);
 
       // Use a mix of valid and invalid paths — the invalid path will cause a YAML load error
@@ -1045,6 +1045,26 @@ describe('Atlassian Compass generator tests', () => {
       // Third service should also be processed despite the second one failing
       const lib = await getService('my-library');
       expect(lib).toBeDefined();
+    });
+
+    it('continues processing when a malformed YAML file is encountered', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-library-compass.yml') },
+          { path: join(__dirname, 'malformed-compass.yml') },
+          { path: join(__dirname, 'my-service-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      // Services before and after the malformed file should both succeed
+      const lib = await getService('my-library');
+      expect(lib).toBeDefined();
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
     });
   });
 

@@ -97,7 +97,7 @@ function buildBadges(config: CompassConfig): Badge[] {
         backgroundColor = '#ef4444'; // red
       }
       badges.push({
-        content: `${sc.name}: ${pct}%`,
+        content: `${sanitizeMarkdownText(sc.name)}: ${pct}%`,
         backgroundColor,
         textColor: '#fff',
       });

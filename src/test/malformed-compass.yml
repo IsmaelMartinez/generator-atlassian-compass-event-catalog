@@ -2,9 +2,9 @@ configVersion: 1
 name: malformed-service
 typeId: SERVICE
 fields:
-  tier: invalid_not_a_number
+  tier: 1
   lifecycle: Active
-links:
-  - name: Bad link
-    type: INVALID_TYPE
-    url: 'not-a-valid-url:::bad'
+  bad_indent:
+    - this is fine
+      but this line breaks yaml parsing:
+    [invalid: {nested: ]
