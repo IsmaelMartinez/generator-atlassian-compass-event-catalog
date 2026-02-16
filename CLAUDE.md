@@ -32,6 +32,7 @@ Pass 1 (`src/index.ts`): Load each compass YAML via `loadConfig` from `src/compa
 Pass 2 (`src/index.ts`): For each processable file, call `loadService` from `src/service.ts` to build the `Service` object (markdown template with links, dependencies, badges, owners, repository URL), then write it via the EventCatalog SDK. If a `domain` option is provided, `src/domain.ts` handles creating/versioning the domain and associating services to it.
 
 Key modules:
+
 - `src/compass.ts` — `CompassConfig` type definition and YAML loading. The type mirrors the Atlassian Compass config-as-code spec.
 - `src/service.ts` — Transforms a `CompassConfig` into an EventCatalog `Service`. Contains markdown template generation, badge building, URL sanitization (XSS prevention), and link formatting.
 - `src/domain.ts` — `Domain` class that manages domain creation, versioning, and service association via the SDK.
