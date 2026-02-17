@@ -199,12 +199,10 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
                 if (teamData?.displayName) {
                   teamName = sanitizeText(teamData.displayName);
                 }
-              } catch (error) {
+              } catch {
                 // Fall back to UUID if team fetch fails
-                // Avoid logging full error details as they may contain sensitive API credentials
                 if (options.debug) {
-                  const errorType = error instanceof Error ? error.name : 'Unknown error';
-                  console.debug(chalk.magenta(` - Could not fetch team name for ${rawTeamId}, using UUID (${errorType})`));
+                  console.debug(chalk.magenta(` - Could not fetch team name for ${rawTeamId}, using UUID`));
                 }
               }
             }
