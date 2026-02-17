@@ -5,18 +5,17 @@ export default class Domain {
   id: string;
   name: string;
   version: string;
-  projectDir: string;
+  private sdk: ReturnType<typeof utils>;
 
   constructor(id: string, name: string, version: string, projectDir: string) {
     this.id = id;
     this.name = name;
     this.version = version;
-    this.projectDir = projectDir;
+    this.sdk = utils(projectDir);
   }
 
   async processDomain() {
-    // EventCatalog SDK (https://www.eventcatalog.dev/docs/sdk)
-    const { getDomain, writeDomain, versionDomain } = utils(this.projectDir);
+    const { getDomain, writeDomain, versionDomain } = this.sdk;
 
     // Try and get the domain
     const domain = await getDomain(this.id, this.version || 'latest');
@@ -48,7 +47,7 @@ export default class Domain {
   }
 
   async addServiceToDomain(serviceId: string, serviceVersion: string = '0.0.0') {
-    const { addServiceToDomain } = utils(this.projectDir);
+    const { addServiceToDomain } = this.sdk;
 
     await addServiceToDomain(
       this.id,

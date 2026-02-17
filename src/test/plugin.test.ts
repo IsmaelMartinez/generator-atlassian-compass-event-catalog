@@ -1145,7 +1145,7 @@ describe('Atlassian Compass generator tests', () => {
       expect(team).not.toBeDefined();
     });
 
-    it('does not modify domain when dryRun is true', async () => {
+    it('does not create domain or add services when dryRun is true', async () => {
       const { getDomain } = utils(catalogDir);
 
       await plugin(eventCatalogConfig, {
@@ -1155,13 +1155,9 @@ describe('Atlassian Compass generator tests', () => {
         dryRun: true,
       });
 
-      // Domain itself is created before the second pass (not affected by dryRun for domain creation),
-      // but services should NOT be added to it
+      // Domain should NOT be created when dryRun is true
       const domain = await getDomain('dry-run-domain', '1.0.0');
-      if (domain) {
-        // If domain was created, it should have no services
-        expect(domain.services || []).toHaveLength(0);
-      }
+      expect(domain).not.toBeDefined();
     });
 
     it('validates Zod accepts dryRun option', async () => {

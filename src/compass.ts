@@ -83,5 +83,9 @@ export type CompassConfig = {
 };
 
 export function loadConfig(path: string): CompassConfig {
-  return yaml.load(fs.readFileSync(path, 'utf8')) as CompassConfig;
+  const raw = yaml.load(fs.readFileSync(path, 'utf8'));
+  if (!raw || typeof raw !== 'object' || !('name' in raw) || typeof (raw as Record<string, unknown>).name !== 'string') {
+    throw new Error(`Invalid Compass config in ${path}: missing required "name" field`);
+  }
+  return raw as CompassConfig;
 }
