@@ -74,13 +74,22 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   const { getService, writeService, writeTeam } = utils(projectDir);
 
   const format = options.format || 'mdx';
+  const dryRun = options.dryRun === true;
   const teamsWritten = new Set<string>();
 
   let domain = null;
 
   if (options.domain) {
     domain = new Domain(options.domain.id, options.domain.name, options.domain.version, projectDir);
-    await domain.processDomain();
+    if (dryRun) {
+      console.log(
+        chalk.yellow(
+          `\n[DRY RUN] Would create/update domain: ${options.domain.name} (id: ${options.domain.id}, v${options.domain.version})`
+        )
+      );
+    } else {
+      await domain.processDomain();
+    }
   }
 
   // First pass: build processable entries from either API or YAML mode
@@ -153,7 +162,6 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   }
 
   // Second pass: write services with resolved dependencies
-  const dryRun = options.dryRun === true;
   let successCount = 0;
   let failureCount = loadFailureCount;
   const failures: Array<{ name: string; error: string }> = [...loadFailures];
