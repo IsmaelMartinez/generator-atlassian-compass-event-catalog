@@ -17,6 +17,9 @@ export type ApiConfig = {
 
 export type MarkdownTemplateFn = (config: CompassConfig, dependencies: ResolvedDependency[]) => string;
 
+export type ServiceIdStrategyFn = (config: CompassConfig) => string;
+export type ServiceIdStrategy = 'name' | 'compass-id' | ServiceIdStrategyFn;
+
 // Configuration the users give your catalog
 export type GeneratorProps = {
   // YAML mode (existing)
@@ -32,6 +35,10 @@ export type GeneratorProps = {
   markdownTemplate?: MarkdownTemplateFn;
   // Phase 5: Output format (md or mdx), default: 'mdx'
   format?: 'md' | 'mdx';
+  // Phase 6: Configurable service ID strategy
+  serviceIdStrategy?: ServiceIdStrategy;
+  // Phase 6: Dry-run mode — log changes without writing
+  dryRun?: boolean;
 };
 
 export type DomainOption = {

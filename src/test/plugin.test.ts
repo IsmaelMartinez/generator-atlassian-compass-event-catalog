@@ -963,4 +963,346 @@ describe('Atlassian Compass generator tests', () => {
       expect(service.specifications).toBeUndefined();
     });
   });
+
+  describe('Phase 6: configurable service ID strategy', () => {
+    it('defaults to name-based service IDs', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+      expect(service.id).toBe('my-service');
+    });
+
+    it('uses compass-id strategy to derive service ID from Compass ARN', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        serviceIdStrategy: 'compass-id',
+      });
+
+      // The Compass ARN is sanitized: non-alphanumeric chars become dashes
+      const service = await getService(
+        'ari-cloud-compass-a0000000-b000-c000-d000-e00000000000-component-00000000-0000-0000-0000-000000000000-00000000-0000-0000-0000-000000000000'
+      );
+      expect(service).toBeDefined();
+      expect(service.name).toBe('my-service');
+    });
+
+    it('uses custom function strategy for service IDs', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        serviceIdStrategy: (config) => `custom-${config.name}`,
+      });
+
+      const service = await getService('custom-my-service');
+      expect(service).toBeDefined();
+      expect(service.name).toBe('my-service');
+    });
+
+    it('file-level id overrides serviceIdStrategy', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml'), id: 'file-override' }],
+        compassUrl: 'https://compass.atlassian.com',
+        serviceIdStrategy: 'compass-id',
+      });
+
+      const service = await getService('file-override');
+      expect(service).toBeDefined();
+      expect(service.name).toBe('my-service');
+    });
+  });
+
+  describe('Phase 6: error resilience and partial failure handling', () => {
+    it('continues processing when one service fails (nonexistent file) and reports summary', async () => {
+      const { getService } = utils(catalogDir);
+
+      // Use a mix of valid and invalid paths — the invalid path will cause a YAML load error
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-service-compass.yml') },
+          { path: join(__dirname, 'nonexistent-file.yml') },
+          { path: join(__dirname, 'my-library-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      // First service should be processed successfully
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+
+      // Third service should also be processed despite the second one failing
+      const lib = await getService('my-library');
+      expect(lib).toBeDefined();
+    });
+
+    it('continues processing when a malformed YAML file is encountered', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [
+          { path: join(__dirname, 'my-library-compass.yml') },
+          { path: join(__dirname, 'malformed-compass.yml') },
+          { path: join(__dirname, 'my-service-compass.yml') },
+        ],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      // Services before and after the malformed file should both succeed
+      const lib = await getService('my-library');
+      expect(lib).toBeDefined();
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+    });
+  });
+
+  describe('Phase 6: dry-run mode', () => {
+    it('does not write services when dryRun is true', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        dryRun: true,
+      });
+
+      const service = await getService('my-service');
+      expect(service).not.toBeDefined();
+    });
+
+    it('does not write teams when dryRun is true', async () => {
+      const { getTeam } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        dryRun: true,
+      });
+
+      const team = await getTeam('00000000-0000-0000-0000-000000000000');
+      expect(team).not.toBeDefined();
+    });
+
+    it('does not modify domain when dryRun is true', async () => {
+      const { getDomain } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        domain: { id: 'dry-run-domain', name: 'Dry Run Domain', version: '1.0.0' },
+        dryRun: true,
+      });
+
+      // Domain itself is created before the second pass (not affected by dryRun for domain creation),
+      // but services should NOT be added to it
+      const domain = await getDomain('dry-run-domain', '1.0.0');
+      if (domain) {
+        // If domain was created, it should have no services
+        expect(domain.services || []).toHaveLength(0);
+      }
+    });
+
+    it('validates Zod accepts dryRun option', async () => {
+      // Just ensure dryRun: true doesn't throw Zod validation errors
+      await expect(
+        plugin(eventCatalogConfig, {
+          services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+          compassUrl: 'https://compass.atlassian.com',
+          dryRun: true,
+        })
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('Phase 6: AsyncAPI spec support', () => {
+    it('attaches AsyncAPI specifications from links with "asyncapi" in name', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-asyncapi-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-asyncapi-service');
+      expect(service).toBeDefined();
+      expect(service.specifications).toBeDefined();
+      expect(service.specifications).toContainEqual({
+        type: 'asyncapi',
+        path: 'https://api.example.com/asyncapi.yaml',
+        name: 'AsyncAPI Events Spec',
+      });
+    });
+
+    it('attaches both OpenAPI and AsyncAPI specs from the same service', async () => {
+      const { getService } = utils(catalogDir);
+
+      // my-openapi-service has openapi and swagger links; let's test the asyncapi one separately
+      // This verifies asyncapi detection doesn't interfere with openapi detection
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-openapi-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-openapi-service');
+      expect(service).toBeDefined();
+      // Should still detect openapi and swagger specs
+      expect(service.specifications).toContainEqual({
+        type: 'openapi',
+        path: 'https://api.example.com/openapi.yaml',
+        name: 'OpenAPI Spec',
+      });
+      expect(service.specifications).toContainEqual({
+        type: 'openapi',
+        path: 'https://api.example.com/swagger.json',
+        name: 'Swagger Documentation',
+      });
+    });
+
+    it('does not attach specifications when no asyncapi/openapi links exist', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-library-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const service = await getService('my-library');
+      expect(service).toBeDefined();
+      expect(service.specifications).toBeUndefined();
+    });
+  });
+
+  describe('Phase 6: scorecard-to-badge mapping', () => {
+    it('creates badges from scorecard data with high score (green)', async () => {
+      const { loadService } = await import('../service');
+      const config = {
+        name: 'scorecard-service',
+        typeId: 'SERVICE' as const,
+        scorecards: [{ name: 'Health', score: 85, maxScore: 100 }],
+      };
+
+      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'scorecard-service');
+      expect(service.badges).toContainEqual({
+        content: 'Health: 85%',
+        backgroundColor: '#22c55e',
+        textColor: '#fff',
+      });
+    });
+
+    it('creates badges from scorecard data with medium score (amber)', async () => {
+      const { loadService } = await import('../service');
+      const config = {
+        name: 'scorecard-service',
+        typeId: 'SERVICE' as const,
+        scorecards: [{ name: 'Security', score: 60, maxScore: 100 }],
+      };
+
+      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'scorecard-service');
+      expect(service.badges).toContainEqual({
+        content: 'Security: 60%',
+        backgroundColor: '#f59e0b',
+        textColor: '#fff',
+      });
+    });
+
+    it('creates badges from scorecard data with low score (red)', async () => {
+      const { loadService } = await import('../service');
+      const config = {
+        name: 'scorecard-service',
+        typeId: 'SERVICE' as const,
+        scorecards: [{ name: 'Readiness', score: 20, maxScore: 100 }],
+      };
+
+      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'scorecard-service');
+      expect(service.badges).toContainEqual({
+        content: 'Readiness: 20%',
+        backgroundColor: '#ef4444',
+        textColor: '#fff',
+      });
+    });
+
+    it('creates multiple scorecard badges', async () => {
+      const { loadService } = await import('../service');
+      const config = {
+        name: 'multi-scorecard-service',
+        typeId: 'SERVICE' as const,
+        scorecards: [
+          { name: 'Health', score: 90, maxScore: 100 },
+          { name: 'Security', score: 40, maxScore: 100 },
+        ],
+      };
+
+      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'multi-scorecard-service');
+      expect(service.badges).toContainEqual({
+        content: 'Health: 90%',
+        backgroundColor: '#22c55e',
+        textColor: '#fff',
+      });
+      expect(service.badges).toContainEqual({
+        content: 'Security: 40%',
+        backgroundColor: '#ef4444',
+        textColor: '#fff',
+      });
+    });
+
+    it('handles maxScore of 0 gracefully', async () => {
+      const { loadService } = await import('../service');
+      const config = {
+        name: 'zero-max-service',
+        typeId: 'SERVICE' as const,
+        scorecards: [{ name: 'Empty', score: 0, maxScore: 0 }],
+      };
+
+      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'zero-max-service');
+      expect(service.badges).toContainEqual({
+        content: 'Empty: 0%',
+        backgroundColor: '#ef4444',
+        textColor: '#fff',
+      });
+    });
+  });
+
+  describe('Phase 6: Zod validation for new options', () => {
+    it('accepts serviceIdStrategy: name', async () => {
+      await expect(
+        plugin(eventCatalogConfig, {
+          services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+          compassUrl: 'https://compass.atlassian.com',
+          serviceIdStrategy: 'name',
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it('accepts serviceIdStrategy: compass-id', async () => {
+      await expect(
+        plugin(eventCatalogConfig, {
+          services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+          compassUrl: 'https://compass.atlassian.com',
+          serviceIdStrategy: 'compass-id',
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it('accepts serviceIdStrategy as a function', async () => {
+      await expect(
+        plugin(eventCatalogConfig, {
+          services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+          compassUrl: 'https://compass.atlassian.com',
+          serviceIdStrategy: (config) => config.name,
+        })
+      ).resolves.not.toThrow();
+    });
+  });
 });

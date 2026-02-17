@@ -59,6 +59,12 @@ type CustomField = {
   value: string;
 };
 
+export type ScorecardScore = {
+  name: string;
+  score: number;
+  maxScore: number;
+};
+
 export type CompassConfig = {
   configVersion?: number;
   name: string;
@@ -73,6 +79,7 @@ export type CompassConfig = {
   };
   customFields?: CustomField[];
   labels?: string[];
+  scorecards?: ScorecardScore[];
 };
 
 export function loadConfig(path: string): CompassConfig {

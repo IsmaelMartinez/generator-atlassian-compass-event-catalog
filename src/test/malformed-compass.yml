@@ -1,0 +1,10 @@
+configVersion: 1
+name: malformed-service
+typeId: SERVICE
+fields:
+  tier: 1
+  lifecycle: Active
+  bad_indent:
+    - this is fine
+      but this line breaks yaml parsing:
+    [invalid: {nested: ]

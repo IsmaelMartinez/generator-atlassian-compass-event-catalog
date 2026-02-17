@@ -85,6 +85,25 @@ function buildBadges(config: CompassConfig): Badge[] {
     }
   }
 
+  if (config.scorecards) {
+    for (const sc of config.scorecards) {
+      const pct = sc.maxScore > 0 ? Math.round((sc.score / sc.maxScore) * 100) : 0;
+      let backgroundColor: string;
+      if (pct >= 80) {
+        backgroundColor = '#22c55e'; // green
+      } else if (pct >= 50) {
+        backgroundColor = '#f59e0b'; // amber
+      } else {
+        backgroundColor = '#ef4444'; // red
+      }
+      badges.push({
+        content: `${sanitizeMarkdownText(sc.name)}: ${pct}%`,
+        backgroundColor,
+        textColor: '#fff',
+      });
+    }
+  }
+
   return badges;
 }
 
@@ -165,9 +184,11 @@ const getTeamUrl = (compassUrl: string, config: CompassConfig) => {
   }
 };
 
-function getOpenApiSpecifications(config: CompassConfig): Array<{ type: 'openapi'; path: string; name?: string }> {
+type SpecType = 'openapi' | 'asyncapi';
+
+function getSpecifications(config: CompassConfig): Array<{ type: SpecType; path: string; name?: string }> {
   if (!config.links) return [];
-  const specs: Array<{ type: 'openapi'; path: string; name?: string }> = [];
+  const specs: Array<{ type: SpecType; path: string; name?: string }> = [];
   for (const link of config.links) {
     if (!link.name) continue;
     const nameLower = link.name.toLowerCase();
@@ -175,6 +196,11 @@ function getOpenApiSpecifications(config: CompassConfig): Array<{ type: 'openapi
       const safeUrl = sanitizeUrl(link.url);
       if (safeUrl) {
         specs.push({ type: 'openapi', path: safeUrl, name: link.name });
+      }
+    } else if (nameLower.includes('asyncapi')) {
+      const safeUrl = sanitizeUrl(link.url);
+      if (safeUrl) {
+        specs.push({ type: 'asyncapi', path: safeUrl, name: link.name });
       }
     }
   }
@@ -195,7 +221,7 @@ export function loadService(
   const badges = buildBadges(config);
   const repositoryUrl = getRepositoryUrl(config);
   const owners = getOwners(config);
-  const specifications = getOpenApiSpecifications(config);
+  const specifications = getSpecifications(config);
 
   const service: Service = {
     id: serviceId,

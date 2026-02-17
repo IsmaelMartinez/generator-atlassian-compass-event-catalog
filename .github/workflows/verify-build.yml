@@ -1,5 +1,7 @@
 # Make sure the EventCatalog SDK OK
 name: Verify Build
+permissions:
+  contents: read
 
 on:
   pull_request:
