@@ -30,12 +30,13 @@ export default {
   },
   generators: [
     [
-      '@ismaelmartinez/generator-atlassian-compass',
+      '@ismaelmartinez/generator-atlassian-compass-event-catalog',
       {
         services: [
           { path: path.join(__dirname, 'src', 'test', 'my-service-compass.yml'), version: '0.0.1' },
           { path: path.join(__dirname, 'src', 'test', 'my-other-compass.notsupported.yml') },
         ],
+        compassUrl: 'https://compass.atlassian.com',
         domain: { id: 'orders', name: 'Compass', version: '0.0.1' },
       },
     ],
