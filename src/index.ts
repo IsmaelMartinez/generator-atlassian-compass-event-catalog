@@ -202,24 +202,27 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
           const teamId = sanitizeId(rawTeamId);
           if (!teamsWritten.has(teamId)) {
             // In API mode, try to fetch team display name from Compass
-            let teamName = teamId;
+            let teamName: string | null = null;
             if (options.api && !dryRun) {
               try {
                 const teamData = await fetchTeamById(options.api, rawTeamId);
                 if (teamData?.displayName) {
                   teamName = sanitizeText(teamData.displayName);
                 } else {
-                  console.warn(chalk.yellow(` - Could not resolve team name for ${rawTeamId}, using UUID`));
+                  console.warn(chalk.yellow(` - Could not resolve team name for ${rawTeamId}, skipping team creation`));
                 }
               } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 console.warn(chalk.yellow(` - Failed to fetch team name for ${rawTeamId}: ${msg}`));
               }
+            } else if (!options.api) {
+              // YAML mode: use the UUID as name (no API to resolve)
+              teamName = teamId;
             }
-            if (!dryRun) {
+            if (teamName && !dryRun) {
               await writeTeam({ id: teamId, name: teamName, markdown: '' }, { override: true });
               console.log(chalk.cyan(` - Team ${teamId} (${teamName}) created`));
-            } else {
+            } else if (teamName && dryRun) {
               console.log(chalk.yellow(` - [DRY RUN] Would create team ${teamId} (${teamName})`));
             }
             teamsWritten.add(teamId);

@@ -543,7 +543,7 @@ describe('Compass API client', () => {
       expect(team.name).toBe('Engineering Squad');
     });
 
-    it('falls back to UUID when team fetch fails', async () => {
+    it('skips team creation when team fetch fails in API mode', async () => {
       // First call: fetchScorecardNames
       mockFetch.mockResolvedValueOnce(makeEmptyScorecardsResponse());
       // Second call: fetchComponents
@@ -565,8 +565,7 @@ describe('Compass API client', () => {
 
       const { getTeam } = utils(catalogDir);
       const team = await getTeam('team-uuid-789');
-      expect(team).toBeDefined();
-      expect(team.name).toBe('team-uuid-789');
+      expect(team).toBeUndefined();
     });
   });
 
