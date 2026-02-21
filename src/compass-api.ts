@@ -332,7 +332,7 @@ export async function fetchTeamById(
 
 // GraphQL query to fetch all scorecards for the cloud instance
 const GET_SCORECARDS_QUERY = `
-  query getScorecards($cloudId: String!) {
+  query getScorecards($cloudId: ID!) {
     compass {
       scorecards(cloudId: $cloudId, query: { first: 100 }) {
         __typename
