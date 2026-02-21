@@ -31,13 +31,9 @@ export type GeneratorProps = {
   debug?: boolean;
   overrideExisting?: boolean;
   typeFilter?: string[];
-  // Phase 5: Custom markdown template function
   markdownTemplate?: MarkdownTemplateFn;
-  // Phase 5: Output format (md or mdx), default: 'mdx'
   format?: 'md' | 'mdx';
-  // Phase 6: Configurable service ID strategy
   serviceIdStrategy?: ServiceIdStrategy;
-  // Phase 6: Dry-run mode — log changes without writing
   dryRun?: boolean;
 };
 

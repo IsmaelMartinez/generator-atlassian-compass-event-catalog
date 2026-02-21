@@ -11,12 +11,8 @@ export default {
   homepageLink: 'https://eventcatalog.dev/',
   landingPage: '',
   editUrl: 'https://github.com/boyney123/eventcatalog-demo/edit/master',
-  // By default set to false, add true to get urls ending in /
   trailingSlash: false,
-  // Change to make the base url of the site different, by default https://{website}.com/docs,
-  // changing to /company would be https://{website}.com/company/docs,
   base: '/',
-  // Customize the logo, add your logo to public/ folder
   logo: {
     alt: 'EventCatalog Logo',
     src: '/logo.png',
@@ -24,20 +20,81 @@ export default {
   },
   docs: {
     sidebar: {
-      // Should the sub heading be rendered in the docs sidebar?
       showPageHeadings: true,
     },
   },
   generators: [
+    // ──────────────────────────────────────────────
+    // YAML mode: read local compass.yml files
+    // ──────────────────────────────────────────────
     [
-      '@ismaelmartinez/generator-atlassian-compass',
+      '@ismaelmartinez/generator-atlassian-compass-event-catalog',
       {
+        // List of local compass.yml files to process
         services: [
-          { path: path.join(__dirname, 'src', 'test', 'my-service-compass.yml'), version: '0.0.1' },
-          { path: path.join(__dirname, 'src', 'test', 'my-other-compass.notsupported.yml') },
+          {
+            path: path.join(__dirname, 'src', 'test', 'my-service-compass.yml'),
+            version: '0.0.1', // optional, defaults to '0.0.0'
+            // id: 'custom-service-id', // optional, overrides name from YAML
+          },
+          {
+            path: path.join(__dirname, 'src', 'test', 'my-application-compass.yml'),
+          },
         ],
-        domain: { id: 'orders', name: 'Compass', version: '0.0.1' },
+
+        // Required: base URL for Compass component links
+        compassUrl: 'https://mysite.atlassian.net/compass',
+
+        // Optional: group services under a domain (created if it doesn't exist)
+        domain: { id: 'orders', name: 'Orders Domain', version: '0.0.1' },
+
+        // Optional: only process components of these types
+        // typeFilter: ['SERVICE', 'APPLICATION'],
+
+        // Optional: skip updating services that already exist in the catalog
+        // overrideExisting: false,
+
+        // Optional: output format — 'mdx' (default) or 'md'
+        // format: 'md',
+
+        // Optional: how service IDs are derived — 'name' (default), 'compass-id', or a function
+        // serviceIdStrategy: 'name',
+        // serviceIdStrategy: (config) => `prefix-${config.name}`,
+
+        // Optional: custom markdown template for service pages
+        // markdownTemplate: (config, dependencies) => {
+        //   const depList = dependencies.map(d => d.name).join(', ') || 'none';
+        //   return `# ${config.name}\n\nDepends on: ${depList}`;
+        // },
+
+        // Optional: preview changes without writing files
+        // dryRun: true,
+
+        // Optional: enable debug logging (credentials are redacted)
+        // debug: true,
       },
     ],
+
+    // ──────────────────────────────────────────────
+    // API mode: fetch components from Compass GraphQL API
+    // ──────────────────────────────────────────────
+    // [
+    //   '@ismaelmartinez/generator-atlassian-compass-event-catalog',
+    //   {
+    //     api: {
+    //       cloudId: '$COMPASS_CLOUD_ID',        // supports $ENV_VAR syntax
+    //       apiToken: '$COMPASS_API_TOKEN',
+    //       email: '$COMPASS_EMAIL',
+    //       baseUrl: 'https://mysite.atlassian.net', // must be HTTPS
+    //       typeFilter: ['SERVICE'],              // optional server-side filtering
+    //     },
+    //
+    //     compassUrl: 'https://mysite.atlassian.net/compass',
+    //
+    //     // All the same options as YAML mode are available:
+    //     // domain, typeFilter, overrideExisting, format,
+    //     // serviceIdStrategy, markdownTemplate, dryRun, debug
+    //   },
+    // ],
   ],
 };
