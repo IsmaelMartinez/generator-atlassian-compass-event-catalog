@@ -148,7 +148,7 @@ export const defaultMarkdown = (
 
   const dependencyLines =
     dependencies && dependencies.length > 0
-      ? dependencies.map((dep) => `* [${sanitizeMarkdownText(dep.name)}](../${dep.id}/)`).join('\n')
+      ? dependencies.map((dep) => `* [${sanitizeMarkdownText(dep.name)}](/docs/services/${dep.id}/)`).join('\n')
       : 'No known dependencies.';
 
   return `

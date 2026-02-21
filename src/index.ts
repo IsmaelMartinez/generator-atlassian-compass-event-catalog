@@ -5,7 +5,7 @@ import { loadService, extractTeamId } from './service';
 import Domain from './domain';
 import { GeneratorProps, ResolvedDependency, ServiceIdStrategy } from './types';
 import { GeneratorPropsSchema } from './validation';
-import { fetchComponents, fetchTeamById } from './compass-api';
+import { fetchComponents, fetchTeamById, fetchScorecardNames } from './compass-api';
 
 // Sanitize IDs to prevent path traversal from untrusted sources
 function sanitizeId(id: string): string {
@@ -100,7 +100,8 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   if (options.api) {
     // API mode: fetch components from Compass GraphQL API
     console.log(chalk.green('Fetching components from Compass API...'));
-    const components = await fetchComponents(options.api);
+    const scorecardNames = await fetchScorecardNames(options.api);
+    const components = await fetchComponents(options.api, scorecardNames);
     console.log(chalk.green(`Fetched ${components.length} components from Compass API`));
 
     for (const config of components) {
@@ -207,12 +208,12 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
                 const teamData = await fetchTeamById(options.api, rawTeamId);
                 if (teamData?.displayName) {
                   teamName = sanitizeText(teamData.displayName);
+                } else {
+                  console.warn(chalk.yellow(` - Could not resolve team name for ${rawTeamId}, using UUID`));
                 }
-              } catch {
-                // Fall back to UUID if team fetch fails
-                if (options.debug) {
-                  console.debug(chalk.magenta(` - Could not fetch team name for ${rawTeamId}, using UUID`));
-                }
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                console.warn(chalk.yellow(` - Failed to fetch team name for ${rawTeamId}: ${msg}`));
               }
             }
             if (!dryRun) {

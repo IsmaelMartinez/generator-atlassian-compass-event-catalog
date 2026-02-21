@@ -182,7 +182,15 @@ function extractField(fields: GraphQLField[] | null, fieldName: string): string 
   return field?.value || undefined;
 }
 
-function mapComponent(component: GraphQLComponent): CompassConfig {
+// Extract a readable name from a scorecard ARI (e.g., ari:cloud:compass:...:scorecard/.../UUID → UUID).
+// If the value is already a plain name (no colons), return it as-is.
+function extractScorecardName(scorecardId: string): string {
+  if (!scorecardId.includes(':')) return scorecardId;
+  const parts = scorecardId.split('/');
+  return parts[parts.length - 1] || scorecardId;
+}
+
+function mapComponent(component: GraphQLComponent, scorecardNames?: Map<string, string>): CompassConfig {
   const config: CompassConfig = {
     name: component.name,
     id: component.id,
@@ -237,7 +245,7 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
 
   if (component.scorecardScores && component.scorecardScores.length > 0) {
     config.scorecards = component.scorecardScores.map((sc) => ({
-      name: sc.scorecardId,
+      name: scorecardNames?.get(sc.scorecardId) ?? extractScorecardName(sc.scorecardId),
       score: sc.totalScore,
       maxScore: sc.maxTotalScore,
     }));
@@ -297,24 +305,103 @@ export async function fetchTeamById(
   });
 
   if (!response.ok) {
+    console.warn(`Team API request failed for ${teamId} (HTTP ${response.status})`);
     return null;
   }
 
   const result = (await response.json()) as GetTeamResponse;
 
-  if (result.errors || !result.data) {
+  if (result.errors) {
+    console.warn(`Team API GraphQL error for ${teamId}: ${result.errors[0]?.message}`);
     return null;
   }
 
-  const team = result.data.team.teamById.team;
+  if (!result.data) {
+    console.warn(`Team API returned no data for ${teamId}`);
+    return null;
+  }
+
+  const team = result.data.team?.teamById?.team;
   if (!team) {
+    console.warn(`Team not found for ID ${teamId}`);
     return null;
   }
 
   return { id: team.teamId, displayName: team.displayName };
 }
 
-export async function fetchComponents(config: ApiConfig): Promise<CompassConfig[]> {
+// GraphQL query to fetch all scorecards for the cloud instance
+const GET_SCORECARDS_QUERY = `
+  query getScorecards($cloudId: String!) {
+    compass {
+      scorecards(cloudId: $cloudId, query: { first: 100 }) {
+        ... on CompassScorecardConnection {
+          nodes {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+type GetScorecardsResponse = {
+  data?: {
+    compass: {
+      scorecards: {
+        nodes?: Array<{ id: string; name: string }>;
+      };
+    };
+  };
+  errors?: Array<{ message: string }>;
+};
+
+export async function fetchScorecardNames(
+  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl' | 'cloudId'>
+): Promise<Map<string, string>> {
+  const resolvedToken = resolveValue(config.apiToken);
+  const resolvedEmail = resolveValue(config.email);
+  const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
+  const authHeader = buildAuthHeader(resolvedEmail, resolvedToken);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader,
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query: GET_SCORECARDS_QUERY,
+        variables: { cloudId: config.cloudId },
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`Could not fetch scorecard names (HTTP ${response.status}), will use short IDs`);
+      return new Map();
+    }
+
+    const result = (await response.json()) as GetScorecardsResponse;
+    if (result.errors || !result.data?.compass?.scorecards?.nodes) {
+      console.warn('Could not fetch scorecard names from API, will use short IDs');
+      return new Map();
+    }
+
+    const map = new Map<string, string>();
+    for (const sc of result.data.compass.scorecards.nodes) {
+      map.set(sc.id, sc.name);
+    }
+    return map;
+  } catch {
+    console.warn('Failed to fetch scorecard names, will use short IDs');
+    return new Map();
+  }
+}
+
+export async function fetchComponents(config: ApiConfig, scorecardNames?: Map<string, string>): Promise<CompassConfig[]> {
   const resolvedToken = resolveValue(config.apiToken);
   const resolvedEmail = resolveValue(config.email);
   const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
@@ -377,7 +464,7 @@ export async function fetchComponents(config: ApiConfig): Promise<CompassConfig[
     }
 
     for (const node of searchResult.nodes) {
-      components.push(mapComponent(node.component));
+      components.push(mapComponent(node.component, scorecardNames));
     }
 
     hasNextPage = searchResult.pageInfo.hasNextPage;
