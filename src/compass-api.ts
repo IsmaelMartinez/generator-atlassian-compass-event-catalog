@@ -15,11 +15,9 @@ type GraphQLField = {
 };
 
 type GraphQLScorecardScore = {
-  scorecard: {
-    name: string;
-  };
-  score: number;
-  maxScore: number;
+  scorecardId: string;
+  totalScore: number;
+  maxTotalScore: number;
 };
 
 type GraphQLComponent = {
@@ -35,14 +33,14 @@ type GraphQLComponent = {
     name: string | null;
   }> | null;
   relationships: {
-    nodes: Array<{
-      type: string;
-      nodeId: string;
+    nodes?: Array<{
+      relationshipType: string;
+      endNode: { id: string } | null;
     }>;
   } | null;
   labels: Array<{ name: string }> | null;
   customFields: Array<{
-    definition: { name: string; type: string };
+    definition: { name: string };
     textValue?: string;
     booleanValue?: boolean;
     numberValue?: number;
@@ -50,16 +48,21 @@ type GraphQLComponent = {
   scorecardScores: GraphQLScorecardScore[] | null;
 };
 
+type SearchComponentsResult = {
+  __typename: string;
+  nodes?: Array<{ component: GraphQLComponent }>;
+  pageInfo?: {
+    hasNextPage: boolean;
+    endCursor: string | null;
+  };
+  message?: string;
+  identifier?: string;
+};
+
 type SearchComponentsResponse = {
   data?: {
     compass: {
-      searchComponents: {
-        nodes: Array<{ component: GraphQLComponent }>;
-        pageInfo: {
-          hasNextPage: boolean;
-          endCursor: string | null;
-        };
-      };
+      searchComponents: SearchComponentsResult;
     };
   };
   errors?: Array<{ message: string }>;
@@ -71,12 +74,14 @@ type SearchComponentsResponse = {
 // - Lifecycle/tier use CompassEnumField fragment: `fields { definition { name } ... on CompassEnumField { value } }`
 // - Relationship nodes use `nodeId` (matching creation API input)
 const SEARCH_COMPONENTS_QUERY = `
-  query searchComponents($cloudId: String!, $after: String, $types: [CompassComponentType!]) {
+  query searchComponents($cloudId: String!, $after: String) {
     compass {
       searchComponents(
         cloudId: $cloudId
-        query: { after: $after, first: 50, componentTypes: $types }
+        query: { after: $after, first: 50 }
       ) {
+        __typename
+        ... on QueryError { message identifier }
         ... on CompassSearchComponentConnection {
           nodes {
             component {
@@ -95,22 +100,24 @@ const SEARCH_COMPONENTS_QUERY = `
                 name
               }
               relationships {
-                nodes {
-                  type
-                  nodeId
+                ... on CompassRelationshipConnection {
+                  nodes {
+                    relationshipType
+                    endNode { id }
+                  }
                 }
               }
               labels { name }
               customFields {
-                definition { name type }
-                textValue
-                booleanValue
-                numberValue
+                definition { name }
+                ... on CompassCustomTextField { textValue }
+                ... on CompassCustomBooleanField { booleanValue }
+                ... on CompassCustomNumberField { numberValue }
               }
               scorecardScores {
-                scorecard { name }
-                score
-                maxScore
+                scorecardId
+                totalScore
+                maxTotalScore
               }
             }
           }
@@ -138,9 +145,15 @@ function buildAuthHeader(email: string, apiToken: string): string {
   return `Basic ${Buffer.from(`${email}:${apiToken}`).toString('base64')}`;
 }
 
-function mapTier(value: string | null | undefined): 1 | 2 | 3 | 4 | undefined {
-  if (!value) return undefined;
-  const match = value.match(/(\d)/);
+function mapTier(value: unknown): 1 | 2 | 3 | 4 | undefined {
+  if (value == null) return undefined;
+  // Handle numeric values directly
+  if (typeof value === 'number') {
+    if (value >= 1 && value <= 4) return value as 1 | 2 | 3 | 4;
+    return undefined;
+  }
+  const str = String(value);
+  const match = str.match(/(\d)/);
   if (match) {
     const num = parseInt(match[1], 10);
     if (num >= 1 && num <= 4) return num as 1 | 2 | 3 | 4;
@@ -148,17 +161,19 @@ function mapTier(value: string | null | undefined): 1 | 2 | 3 | 4 | undefined {
   return undefined;
 }
 
-function mapLifecycle(value: string | null | undefined): string | undefined {
-  if (!value) return undefined;
+function mapLifecycle(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  const str = String(value);
+  if (!str) return undefined;
   // API may return uppercase (ACTIVE) or title case (Active) — normalize both
-  const normalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+  const normalized = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   const valid: Record<string, string> = {
     Active: 'Active',
     'Pre-release': 'Pre-release',
     Prerelease: 'Pre-release',
     Deprecated: 'Deprecated',
   };
-  return valid[normalized] || valid[value];
+  return valid[normalized] || valid[str];
 }
 
 function extractField(fields: GraphQLField[] | null, fieldName: string): string | undefined {
@@ -194,7 +209,9 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
   }
 
   if (component.relationships?.nodes && component.relationships.nodes.length > 0) {
-    const dependsOn = component.relationships.nodes.filter((r) => r.type === 'DEPENDS_ON').map((r) => r.nodeId);
+    const dependsOn = component.relationships.nodes
+      .filter((r) => r.relationshipType === 'DEPENDS_ON' && r.endNode?.id)
+      .map((r) => r.endNode!.id);
     if (dependsOn.length > 0) {
       config.relationships = { DEPENDS_ON: dependsOn };
     }
@@ -205,18 +222,24 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
   }
 
   if (component.customFields && component.customFields.length > 0) {
-    config.customFields = component.customFields.map((cf) => ({
-      type: cf.definition.type as CustomFieldType,
-      name: cf.definition.name,
-      value: cf.textValue ?? String(cf.booleanValue ?? cf.numberValue ?? ''),
-    }));
+    config.customFields = component.customFields.map((cf) => {
+      // Infer type from which value field is populated (API doesn't expose type on definition)
+      let type: CustomFieldType = 'text' as CustomFieldType;
+      if (cf.booleanValue !== undefined && cf.booleanValue !== null) type = 'boolean' as CustomFieldType;
+      else if (cf.numberValue !== undefined && cf.numberValue !== null) type = 'number' as CustomFieldType;
+      return {
+        type,
+        name: cf.definition.name,
+        value: cf.textValue ?? String(cf.booleanValue ?? cf.numberValue ?? ''),
+      };
+    });
   }
 
   if (component.scorecardScores && component.scorecardScores.length > 0) {
     config.scorecards = component.scorecardScores.map((sc) => ({
-      name: sc.scorecard.name,
-      score: sc.score,
-      maxScore: sc.maxScore,
+      name: sc.scorecardId,
+      score: sc.totalScore,
+      maxScore: sc.maxTotalScore,
     }));
   }
 
@@ -307,10 +330,6 @@ export async function fetchComponents(config: ApiConfig): Promise<CompassConfig[
       after: cursor,
     };
 
-    if (config.typeFilter && config.typeFilter.length > 0) {
-      variables.types = config.typeFilter;
-    }
-
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -348,6 +367,15 @@ export async function fetchComponents(config: ApiConfig): Promise<CompassConfig[
     }
 
     const searchResult = result.data.compass.searchComponents;
+
+    if (searchResult.__typename === 'QueryError') {
+      throw new Error(`Compass API error: ${searchResult.message || 'Unknown error'}`);
+    }
+
+    if (!searchResult.nodes || !searchResult.pageInfo) {
+      throw new Error('Compass API returned unexpected response structure');
+    }
+
     for (const node of searchResult.nodes) {
       components.push(mapComponent(node.component));
     }

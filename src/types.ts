@@ -31,6 +31,7 @@ export type GeneratorProps = {
   debug?: boolean;
   overrideExisting?: boolean;
   typeFilter?: string[];
+  nameFilter?: string[];
   markdownTemplate?: MarkdownTemplateFn;
   format?: 'md' | 'mdx';
   serviceIdStrategy?: ServiceIdStrategy;

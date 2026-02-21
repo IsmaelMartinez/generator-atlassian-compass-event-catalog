@@ -112,6 +112,13 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
         }
       }
 
+      // Apply nameFilter to only process specific components
+      if (options.nameFilter && options.nameFilter.length > 0) {
+        if (!options.nameFilter.includes(config.name)) {
+          continue;
+        }
+      }
+
       const serviceId = resolveServiceId(config, options.serviceIdStrategy);
       if (config.id) {
         serviceMap.set(config.id, { serviceId, name: config.name });

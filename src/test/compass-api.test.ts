@@ -128,8 +128,8 @@ describe('Compass API client', () => {
           makeComponent({
             relationships: {
               nodes: [
-                { type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/dep-1' },
-                { type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/dep-2' },
+                { relationshipType: 'DEPENDS_ON', endNode: { id: 'ari:cloud:compass:test:component/dep-1' } },
+                { relationshipType: 'DEPENDS_ON', endNode: { id: 'ari:cloud:compass:test:component/dep-2' } },
               ],
             },
           }),
@@ -147,7 +147,7 @@ describe('Compass API client', () => {
       mockFetch.mockResolvedValueOnce(
         makeSearchResponse([
           makeComponent({
-            customFields: [{ definition: { name: 'Environment', type: 'text' }, textValue: 'production' }],
+            customFields: [{ definition: { name: 'Environment' }, textValue: 'production' }],
           }),
         ])
       );
@@ -207,13 +207,13 @@ describe('Compass API client', () => {
       delete process.env.MY_COMPASS_EMAIL;
     });
 
-    it('passes typeFilter as query variable', async () => {
+    it('does not pass typeFilter as query variable (filtered client-side)', async () => {
       mockFetch.mockResolvedValueOnce(makeSearchResponse([]));
 
       await fetchComponents({ ...apiConfig, typeFilter: ['SERVICE', 'APPLICATION'] });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.variables.types).toEqual(['SERVICE', 'APPLICATION']);
+      expect(body.variables.types).toBeUndefined();
     });
 
     it('throws on 401 unauthorized', async () => {
@@ -320,7 +320,7 @@ describe('Compass API client', () => {
             id: 'ari:cloud:compass:test:component/svc-a',
             name: 'service-a',
             relationships: {
-              nodes: [{ type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/svc-b' }],
+              nodes: [{ relationshipType: 'DEPENDS_ON', endNode: { id: 'ari:cloud:compass:test:component/svc-b' } }],
             },
           }),
           makeComponent({
@@ -338,7 +338,7 @@ describe('Compass API client', () => {
       const { getService } = utils(catalogDir);
       const serviceA = await getService('service-a');
       expect(serviceA).toBeDefined();
-      expect(serviceA.markdown).toContain('[service-b](/docs/services/service-b)');
+      expect(serviceA.markdown).toContain('[service-b](../service-b/)');
 
       const serviceB = await getService('service-b');
       expect(serviceB).toBeDefined();
@@ -403,8 +403,8 @@ describe('Compass API client', () => {
         makeSearchResponse([
           makeComponent({
             scorecardScores: [
-              { scorecard: { name: 'Health' }, score: 85, maxScore: 100 },
-              { scorecard: { name: 'Security' }, score: 60, maxScore: 100 },
+              { scorecardId: 'Health', totalScore: 85, maxTotalScore: 100 },
+              { scorecardId: 'Security', totalScore: 60, maxTotalScore: 100 },
             ],
           }),
         ])
@@ -502,7 +502,7 @@ describe('Compass API client', () => {
         makeSearchResponse([
           makeComponent({
             name: 'scorecard-api-service',
-            scorecardScores: [{ scorecard: { name: 'Health' }, score: 90, maxScore: 100 }],
+            scorecardScores: [{ scorecardId: 'Health', totalScore: 90, maxTotalScore: 100 }],
           }),
         ])
       );
