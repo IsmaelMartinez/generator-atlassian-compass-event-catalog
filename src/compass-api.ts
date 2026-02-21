@@ -254,15 +254,13 @@ function mapComponent(component: GraphQLComponent, scorecardNames?: Map<string, 
   return config;
 }
 
-// GraphQL query to fetch a team's display name by team ID
+// GraphQL query to fetch a team's display name — uses Teams v2 API
 const GET_TEAM_QUERY = `
-  query getTeam($teamId: String!) {
+  query getTeam($teamId: ID!, $siteId: String!) {
     team {
-      teamById(teamId: $teamId) {
-        team {
-          teamId
-          displayName
-        }
+      teamV2(id: $teamId, siteId: $siteId) {
+        id
+        displayName
       }
     }
   }
@@ -271,19 +269,17 @@ const GET_TEAM_QUERY = `
 type GetTeamResponse = {
   data?: {
     team: {
-      teamById: {
-        team: {
-          teamId: string;
-          displayName: string;
-        } | null;
-      };
+      teamV2: {
+        id: string;
+        displayName: string;
+      } | null;
     };
   };
   errors?: Array<{ message: string }>;
 };
 
 export async function fetchTeamById(
-  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl'>,
+  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl' | 'cloudId'>,
   teamId: string
 ): Promise<{ id: string; displayName: string } | null> {
   const resolvedToken = resolveValue(config.apiToken);
@@ -291,16 +287,20 @@ export async function fetchTeamById(
   const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
   const authHeader = buildAuthHeader(resolvedEmail, resolvedToken);
 
+  // The Teams v2 API expects the full ARI as ID — construct it if we only have a UUID
+  const teamAri = teamId.startsWith('ari:') ? teamId : `ari:cloud:identity::team/${teamId}`;
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: authHeader,
       Accept: 'application/json',
+      'X-ExperimentalApi': 'teams-beta',
     },
     body: JSON.stringify({
       query: GET_TEAM_QUERY,
-      variables: { teamId },
+      variables: { teamId: teamAri, siteId: config.cloudId },
     }),
   });
 
@@ -321,13 +321,13 @@ export async function fetchTeamById(
     return null;
   }
 
-  const team = result.data.team?.teamById?.team;
+  const team = result.data.team?.teamV2;
   if (!team) {
     console.warn(`Team not found for ID ${teamId}`);
     return null;
   }
 
-  return { id: team.teamId, displayName: team.displayName };
+  return { id: team.id, displayName: team.displayName };
 }
 
 // GraphQL query to fetch all scorecards for the cloud instance
@@ -335,6 +335,8 @@ const GET_SCORECARDS_QUERY = `
   query getScorecards($cloudId: String!) {
     compass {
       scorecards(cloudId: $cloudId, query: { first: 100 }) {
+        __typename
+        ... on QueryError { message identifier }
         ... on CompassScorecardConnection {
           nodes {
             id
@@ -350,7 +352,9 @@ type GetScorecardsResponse = {
   data?: {
     compass: {
       scorecards: {
+        __typename: string;
         nodes?: Array<{ id: string; name: string }>;
+        message?: string;
       };
     };
   };
@@ -385,15 +389,23 @@ export async function fetchScorecardNames(
     }
 
     const result = (await response.json()) as GetScorecardsResponse;
-    if (result.errors || !result.data?.compass?.scorecards?.nodes) {
-      console.warn('Could not fetch scorecard names from API, will use short IDs');
+    if (result.errors) {
+      console.warn(`Scorecard API GraphQL error: ${result.errors[0]?.message}, will use short IDs`);
+      return new Map();
+    }
+
+    const scorecards = result.data?.compass?.scorecards;
+    if (!scorecards?.nodes) {
+      const errorMsg = scorecards?.message || 'no data returned';
+      console.warn(`Could not fetch scorecard names (${errorMsg}), will use short IDs`);
       return new Map();
     }
 
     const map = new Map<string, string>();
-    for (const sc of result.data.compass.scorecards.nodes) {
+    for (const sc of scorecards.nodes) {
       map.set(sc.id, sc.name);
     }
+    console.log(`Fetched ${map.size} scorecard name(s) from Compass API`);
     return map;
   } catch {
     console.warn('Failed to fetch scorecard names, will use short IDs');

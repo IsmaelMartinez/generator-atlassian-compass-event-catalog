@@ -63,15 +63,13 @@ function makeEmptyScorecardsResponse() {
   };
 }
 
-function makeTeamResponse(team: { teamId: string; displayName: string } | null) {
+function makeTeamResponse(team: { id: string; displayName: string } | null) {
   return {
     ok: true,
     json: async () => ({
       data: {
         team: {
-          teamById: {
-            team,
-          },
+          teamV2: team,
         },
       },
     }),
@@ -384,7 +382,7 @@ describe('Compass API client', () => {
 
   describe('fetchTeamById', () => {
     it('fetches team display name by ID', async () => {
-      mockFetch.mockResolvedValueOnce(makeTeamResponse({ teamId: 'team-uuid-123', displayName: 'Platform Team' }));
+      mockFetch.mockResolvedValueOnce(makeTeamResponse({ id: 'team-uuid-123', displayName: 'Platform Team' }));
 
       const team = await fetchTeamById(apiConfig, 'team-uuid-123');
       expect(team).toEqual({ id: 'team-uuid-123', displayName: 'Platform Team' });
@@ -532,7 +530,7 @@ describe('Compass API client', () => {
         ])
       );
       // Third call: fetchTeamById
-      mockFetch.mockResolvedValueOnce(makeTeamResponse({ teamId: 'team-uuid-456', displayName: 'Engineering Squad' }));
+      mockFetch.mockResolvedValueOnce(makeTeamResponse({ id: 'team-uuid-456', displayName: 'Engineering Squad' }));
 
       await plugin(eventCatalogConfig, {
         api: apiConfig,
