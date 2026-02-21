@@ -17,6 +17,7 @@ const expectedMarkdown = `## Links
 * 🧭 [Compass Component](https://compass.atlassian.com/component/00000000-0000-0000-0000-000000000000)
 * 🪂 [Compass Team](https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000)
 * 🚀 [My Jira project](https://www.example.com/projects/myproject)
+* ⭐ [www.example.com](https://www.example.com/resources/)
 * 👀 [Service dashboard](https://www.example.com/dashboards/service-dashboard)
 * 🏡 [Service repository](https://www.example.com/repos/my-service-repo)
 

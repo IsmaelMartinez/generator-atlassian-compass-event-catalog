@@ -32,6 +32,7 @@ export type GeneratorProps = {
   overrideExisting?: boolean;
   typeFilter?: string[];
   nameFilter?: string[];
+  nameMapping?: Record<string, string>;
   markdownTemplate?: MarkdownTemplateFn;
   format?: 'md' | 'mdx';
   serviceIdStrategy?: ServiceIdStrategy;

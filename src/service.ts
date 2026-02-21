@@ -134,12 +134,14 @@ export const defaultMarkdown = (
   const safeTeamUrl = compassTeamUrl ? sanitizeUrl(compassTeamUrl) : '';
 
   const linkLines = config.links
-    ?.filter((link) => link.name)
-    .map((link) => {
-      const safeName = sanitizeMarkdownText(link.name || '');
+    ?.map((link) => {
       const safeUrl = sanitizeUrl(link.url);
       if (!safeUrl) return null;
-      return `* ${UrlTypeToIcon[link.type]} [${safeName}](${safeUrl})`;
+      // Use link name if available, otherwise derive a label from the URL or link type
+      const label = link.name || new URL(safeUrl).hostname;
+      const safeName = sanitizeMarkdownText(label);
+      const icon = UrlTypeToIcon[link.type] || '🔗';
+      return `* ${icon} [${safeName}](${safeUrl})`;
     })
     .filter(Boolean)
     .join('\n');

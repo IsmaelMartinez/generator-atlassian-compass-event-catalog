@@ -119,7 +119,9 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
         }
       }
 
-      const serviceId = resolveServiceId(config, options.serviceIdStrategy);
+      // Apply nameMapping: if the component name has a mapping, use the mapped value as service ID
+      const mappedId = options.nameMapping?.[config.name];
+      const serviceId = mappedId ? sanitizeId(mappedId) : resolveServiceId(config, options.serviceIdStrategy);
       if (config.id) {
         serviceMap.set(config.id, { serviceId, name: config.name });
       }
