@@ -1,0 +1,6 @@
+{
+  "_comment": "Maps GitLab group names (from core-provisioning pr.tfvars) to Compass component names. Generate this from CODEOWNERS files.",
+  "laas-customer-team": ["customer-service", "contact-service"],
+  "laas-payments-team": ["payments-service", "billing-service", "billing-agreement-service"],
+  "cloud-core-team": ["core-infrastructure"]
+}
