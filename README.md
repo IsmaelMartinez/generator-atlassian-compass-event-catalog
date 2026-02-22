@@ -152,29 +152,33 @@ The `seed-compass-teams` script creates Atlassian teams (visible in both Compass
 
 ### Prerequisites
 
-- Atlassian API token with `write:teams` scope
-- The Atlassian organisation ID (find it at [admin.atlassian.com](https://admin.atlassian.com) under Settings → Organisation details)
-- Compass API token with `write:component:compass` scope
-- A `team-mappings.json` file mapping GitLab group names to Compass component names (see `examples/team-mappings.example.json`)
+Two separate Atlassian API tokens are needed (create at [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens)):
+
+- **Teams token** — needs the "Atlassian Team Central" service scopes: `read:teams` and `write:teams` (REST API scopes, not just GraphQL)
+- **Compass token** — needs Compass read/write scopes (`read:component:compass`, `write:component:compass`)
+
+The Atlassian organisation ID is found in the URL when logged in at [admin.atlassian.com](https://admin.atlassian.com): `admin.atlassian.com/o/{orgId}/...`
 
 ### Required environment variables
 
-| Variable            | Description                           |
-| ------------------- | ------------------------------------- |
-| `COMPASS_API_TOKEN` | Atlassian API token                   |
-| `COMPASS_EMAIL`     | Your Atlassian account email          |
-| `COMPASS_CLOUD_ID`  | Atlassian cloud/site ID               |
-| `ATLASSIAN_ORG_ID`  | Atlassian organisation ID             |
-| `COMPASS_BASE_URL`  | e.g. `https://your-org.atlassian.net` |
+| Variable                | Description                                       |
+| ----------------------- | ------------------------------------------------- |
+| `COMPASS_API_TOKEN`     | Atlassian API token with Compass read/write scope |
+| `ATLASSIAN_TEAMS_TOKEN` | Atlassian API token with Teams read/write scope   |
+| `COMPASS_EMAIL`         | Your Atlassian account email                      |
+| `COMPASS_CLOUD_ID`      | Atlassian cloud/site ID                           |
+| `ATLASSIAN_ORG_ID`      | Atlassian organisation ID                         |
+| `COMPASS_BASE_URL`      | e.g. `https://your-org.atlassian.net`             |
 
 ### Usage
 
 **Step 1 — dry run** (preview changes, no writes):
 
 ```bash
-COMPASS_API_TOKEN=xxx COMPASS_EMAIL=xxx COMPASS_CLOUD_ID=xxx \
+COMPASS_API_TOKEN=xxx ATLASSIAN_TEAMS_TOKEN=xxx \
+  COMPASS_EMAIL=xxx COMPASS_CLOUD_ID=xxx \
   ATLASSIAN_ORG_ID=xxx COMPASS_BASE_URL=https://your-org.atlassian.net \
-  pnpm run seed-compass-teams \
+  npm run seed-compass-teams -- \
   --tfvars /path/to/core-provisioning/layers/250provisioning/groups/envs/pr.tfvars \
   --mappings team-mappings.json \
   --dry-run
@@ -183,9 +187,10 @@ COMPASS_API_TOKEN=xxx COMPASS_EMAIL=xxx COMPASS_CLOUD_ID=xxx \
 **Step 2 — apply**:
 
 ```bash
-COMPASS_API_TOKEN=xxx COMPASS_EMAIL=xxx COMPASS_CLOUD_ID=xxx \
+COMPASS_API_TOKEN=xxx ATLASSIAN_TEAMS_TOKEN=xxx \
+  COMPASS_EMAIL=xxx COMPASS_CLOUD_ID=xxx \
   ATLASSIAN_ORG_ID=xxx COMPASS_BASE_URL=https://your-org.atlassian.net \
-  pnpm run seed-compass-teams \
+  npm run seed-compass-teams -- \
   --tfvars /path/to/core-provisioning/layers/250provisioning/groups/envs/pr.tfvars \
   --mappings team-mappings.json
 ```

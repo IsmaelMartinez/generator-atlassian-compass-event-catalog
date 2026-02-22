@@ -30,14 +30,15 @@ function parseArgs(): { tfvarsPath: string; mappingsPath: string; dryRun: boolea
 async function main(): Promise<void> {
   const { tfvarsPath, mappingsPath, dryRun } = parseArgs();
 
-  const apiToken = requireEnv('COMPASS_API_TOKEN');
+  const compassToken = requireEnv('COMPASS_API_TOKEN');
+  const teamsToken = requireEnv('ATLASSIAN_TEAMS_TOKEN');
   const email = requireEnv('COMPASS_EMAIL');
   const cloudId = requireEnv('COMPASS_CLOUD_ID');
   const orgId = requireEnv('ATLASSIAN_ORG_ID');
   const baseUrl = requireEnv('COMPASS_BASE_URL');
 
-  const apiConfig: ApiConfig = { cloudId, apiToken, email, baseUrl };
-  const teamsConfig: TeamsApiConfig = { baseUrl, orgId, apiToken, email };
+  const apiConfig: ApiConfig = { cloudId, apiToken: compassToken, email, baseUrl };
+  const teamsConfig: TeamsApiConfig = { baseUrl, orgId, apiToken: teamsToken, email };
 
   if (dryRun) console.log(chalk.yellow('[DRY RUN] No changes will be made.\n'));
 
