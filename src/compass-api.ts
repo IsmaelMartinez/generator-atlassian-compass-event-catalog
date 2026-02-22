@@ -490,3 +490,69 @@ export async function fetchComponents(config: ApiConfig, scorecardNames?: Map<st
 
   return components;
 }
+
+const UPDATE_COMPONENT_MUTATION = `
+  mutation updateComponent($input: CompassUpdateComponentInput!) {
+    compass {
+      updateComponent(input: $input) {
+        __typename
+        ... on CompassUpdateComponentPayload {
+          componentDetails { id ownerId }
+        }
+        ... on QueryError { message identifier }
+      }
+    }
+  }
+`;
+
+type UpdateComponentResponse = {
+  data?: {
+    compass: {
+      updateComponent: {
+        __typename: string;
+        componentDetails?: { id: string; ownerId: string | null };
+        message?: string;
+      };
+    };
+  };
+  errors?: Array<{ message: string }>;
+};
+
+export async function updateComponentOwner(
+  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl'>,
+  componentId: string,
+  ownerAri: string
+): Promise<void> {
+  const resolvedToken = resolveValue(config.apiToken);
+  const resolvedEmail = resolveValue(config.email);
+  const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
+  const authHeader = buildAuthHeader(resolvedEmail, resolvedToken);
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authHeader,
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      query: UPDATE_COMPONENT_MUTATION,
+      variables: { input: { id: componentId, ownerId: ownerAri } },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Compass updateComponent request failed with status ${response.status}`);
+  }
+
+  const result = (await response.json()) as UpdateComponentResponse;
+
+  if (result.errors && result.errors.length > 0) {
+    throw new Error(result.errors[0].message);
+  }
+
+  const payload = result.data?.compass?.updateComponent;
+  if (payload?.__typename === 'QueryError') {
+    throw new Error(`Compass update component error: ${payload.message ?? 'unknown error'}`);
+  }
+}

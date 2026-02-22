@@ -1,6 +1,6 @@
 import { expect, it, describe, beforeEach, afterEach, vi } from 'vitest';
 import utils from '@eventcatalog/sdk';
-import { fetchComponents, fetchTeamById, fetchScorecardNames, resolveValue } from '../compass-api';
+import { fetchComponents, fetchTeamById, fetchScorecardNames, resolveValue, updateComponentOwner } from '../compass-api';
 import plugin from '../index';
 import { join } from 'node:path';
 import fs from 'fs/promises';
@@ -614,5 +614,61 @@ describe('Compass API client', () => {
         textColor: '#fff',
       });
     });
+  });
+});
+
+describe('updateComponentOwner', () => {
+  beforeEach(() => mockFetch.mockReset());
+
+  it('sends the correct GraphQL mutation with component ID and team ARI', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          compass: {
+            updateComponent: {
+              __typename: 'CompassUpdateComponentPayload',
+              componentDetails: { id: 'comp-ari', ownerId: 'ari:cloud:teams::team/team-uuid' },
+            },
+          },
+        },
+      }),
+    });
+
+    await updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:teams::team/team-uuid');
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.variables).toEqual({
+      input: { id: 'comp-ari', ownerId: 'ari:cloud:teams::team/team-uuid' },
+    });
+  });
+
+  it('throws when response contains GraphQL errors', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ errors: [{ message: 'not authorised' }] }),
+    });
+
+    await expect(updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:teams::team/team-uuid')).rejects.toThrow(
+      'not authorised'
+    );
+  });
+
+  it('throws when payload typename is QueryError', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          compass: {
+            updateComponent: { __typename: 'QueryError', message: 'component not found' },
+          },
+        },
+      }),
+    });
+
+    await expect(updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:teams::team/team-uuid')).rejects.toThrow(
+      'Compass update component error: component not found'
+    );
   });
 });
