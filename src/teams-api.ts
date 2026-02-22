@@ -3,6 +3,7 @@ export type TeamsApiConfig = {
   orgId: string;
   apiToken: string;
   email: string;
+  siteId?: string;
 };
 
 export type AtlassianTeam = {
@@ -19,7 +20,8 @@ function buildAuthHeader(email: string, apiToken: string): string {
 }
 
 function teamsEndpoint(baseUrl: string, orgId: string): string {
-  return `${baseUrl.replace(/\/$/, '')}/gateway/api/public/teams/v1/org/${orgId}/teams`;
+  // Trailing slash is required for POST — without it the endpoint returns 405
+  return `${baseUrl.replace(/\/$/, '')}/gateway/api/public/teams/v1/org/${orgId}/teams/`;
 }
 
 export async function listTeams(config: TeamsApiConfig): Promise<AtlassianTeam[]> {
@@ -46,7 +48,11 @@ export async function createTeam(config: TeamsApiConfig, displayName: string): P
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify({ displayName, type: 'MEMBER_INVITE' }),
+    body: JSON.stringify({
+      displayName,
+      teamType: 'MEMBER_INVITE',
+      ...(config.siteId ? { siteId: config.siteId } : {}),
+    }),
   });
 
   if (!response.ok) {

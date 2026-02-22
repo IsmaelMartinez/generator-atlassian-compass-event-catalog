@@ -9,6 +9,7 @@ const config = {
   orgId: 'test-org-id',
   apiToken: 'test-token',
   email: 'test@example.com',
+  siteId: 'test-site-id',
 };
 
 describe('teamToAri', () => {
@@ -45,7 +46,7 @@ describe('listTeams', () => {
   it('calls the correct Teams API endpoint including orgId', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) });
     await listTeams(config);
-    expect(mockFetch.mock.calls[0][0]).toBe('https://test.atlassian.net/gateway/api/public/teams/v1/org/test-org-id/teams');
+    expect(mockFetch.mock.calls[0][0]).toBe('https://test.atlassian.net/gateway/api/public/teams/v1/org/test-org-id/teams/');
   });
 
   it('throws on non-OK response', async () => {
@@ -66,7 +67,7 @@ describe('createTeam', () => {
     expect(team).toEqual({ id: 'new-uuid', displayName: 'New Team' });
   });
 
-  it('sends displayName and type in request body', async () => {
+  it('sends displayName, teamType, and siteId in request body', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ teamId: 'x', displayName: 'Test' }),
@@ -74,7 +75,19 @@ describe('createTeam', () => {
     await createTeam(config, 'Test');
     const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string);
-    expect(body).toEqual({ displayName: 'Test', type: 'MEMBER_INVITE' });
+    expect(body).toEqual({ displayName: 'Test', teamType: 'MEMBER_INVITE', siteId: 'test-site-id' });
+  });
+
+  it('omits siteId when not configured', async () => {
+    const configWithoutSite = { ...config, siteId: undefined };
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ teamId: 'x', displayName: 'Test' }),
+    });
+    await createTeam(configWithoutSite, 'Test');
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body).toEqual({ displayName: 'Test', teamType: 'MEMBER_INVITE' });
   });
 
   it('throws on non-OK response', async () => {

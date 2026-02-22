@@ -38,7 +38,7 @@ async function main(): Promise<void> {
   const baseUrl = requireEnv('COMPASS_BASE_URL');
 
   const apiConfig: ApiConfig = { cloudId, apiToken: compassToken, email, baseUrl };
-  const teamsConfig: TeamsApiConfig = { baseUrl, orgId, apiToken: teamsToken, email };
+  const teamsConfig: TeamsApiConfig = { baseUrl, orgId, apiToken: teamsToken, email, siteId: cloudId };
 
   if (dryRun) console.log(chalk.yellow('[DRY RUN] No changes will be made.\n'));
 
