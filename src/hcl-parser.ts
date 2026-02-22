@@ -3,7 +3,7 @@
  * Parses only the `groups = [...]` block and extracts `name = "..."` values within it.
  */
 export function parseTeamNames(content: string): string[] {
-  const groupsMatch = content.match(/\bgroups\s*=\s*\[([\s\S]*?)\n\]/);
+  const groupsMatch = content.match(/\bgroups\s*=\s*\[([\s\S]*?)\r?\n\]/);
   if (!groupsMatch) return [];
 
   const block = groupsMatch[1];

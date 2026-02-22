@@ -38,4 +38,9 @@ describe('parseTeamNames', () => {
     const input = 'application_name = "provisioning"\ngroups = [\n  { name = "real-team" }\n]';
     expect(parseTeamNames(input)).toEqual(['real-team']);
   });
+
+  it('extracts names from mixed multi-line and inline entries', () => {
+    const input = `groups = [\n  { name = "inline-team" },\n  {\n    name = "multiline-team"\n  },\n]`;
+    expect(parseTeamNames(input)).toEqual(['inline-team', 'multiline-team']);
+  });
 });
