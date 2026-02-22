@@ -154,21 +154,24 @@ The `seed-compass-teams` script creates Atlassian teams (visible in both Compass
 
 Two separate Atlassian API tokens are needed (create at [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens)):
 
-- **Teams token** — needs the "Atlassian Team Central" service scopes: `read:teams` and `write:teams` (REST API scopes, not just GraphQL)
+- **Teams token** — needs the "Atlassian Team Central" service scopes: `read:teams` and `write:teams`
 - **Compass token** — needs Compass read/write scopes (`read:component:compass`, `write:component:compass`)
 
 The Atlassian organisation ID is found in the URL when logged in at [admin.atlassian.com](https://admin.atlassian.com): `admin.atlassian.com/o/{orgId}/...`
 
+**Team creation requires Atlassian Access (managed directory).** The GraphQL `createTeam` mutation needs a directory ARI (`ari:cloud:directory:{cloudId}:{directoryId}`) which only exists for organisations with Atlassian Access configured. If your organisation uses Atlassian Access, set `ATLASSIAN_DIRECTORY_ID` to the directory UUID found under _Security → Identity providers_ in admin.atlassian.com. Without it, the script will warn for each team it cannot create but will still assign components to any teams that already exist.
+
 ### Required environment variables
 
-| Variable                | Description                                       |
-| ----------------------- | ------------------------------------------------- |
-| `COMPASS_API_TOKEN`     | Atlassian API token with Compass read/write scope |
-| `ATLASSIAN_TEAMS_TOKEN` | Atlassian API token with Teams read/write scope   |
-| `COMPASS_EMAIL`         | Your Atlassian account email                      |
-| `COMPASS_CLOUD_ID`      | Atlassian cloud/site ID                           |
-| `ATLASSIAN_ORG_ID`      | Atlassian organisation ID                         |
-| `COMPASS_BASE_URL`      | e.g. `https://your-org.atlassian.net`             |
+| Variable                 | Description                                                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `COMPASS_API_TOKEN`      | Atlassian API token with Compass read/write scope                                                                 |
+| `ATLASSIAN_TEAMS_TOKEN`  | Atlassian API token with Teams read/write scope                                                                   |
+| `COMPASS_EMAIL`          | Your Atlassian account email                                                                                      |
+| `COMPASS_CLOUD_ID`       | Atlassian cloud/site ID                                                                                           |
+| `ATLASSIAN_ORG_ID`       | Atlassian organisation ID                                                                                         |
+| `COMPASS_BASE_URL`       | e.g. `https://your-org.atlassian.net`                                                                             |
+| `ATLASSIAN_DIRECTORY_ID` | (optional) Directory UUID from admin.atlassian.com → Security → Identity providers. Required to create new teams. |
 
 ### Usage
 

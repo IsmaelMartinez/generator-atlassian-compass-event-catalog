@@ -10,6 +10,7 @@ const config = {
   apiToken: 'test-token',
   email: 'test@example.com',
   siteId: 'test-site-id',
+  directoryId: 'test-directory-id',
 };
 
 describe('teamToAri', () => {
@@ -111,7 +112,7 @@ describe('createTeam', () => {
     expect(team).toEqual({ id: 'ari:cloud:identity::team/new-uuid', displayName: 'New Team' });
   });
 
-  it('sends correct input variables with org ARI as scopeId', async () => {
+  it('sends correct input variables with directory ARI as scopeId', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -133,8 +134,14 @@ describe('createTeam', () => {
       displayName: 'Test',
       description: '',
       membershipSettings: 'MEMBER_INVITE',
-      scopeId: 'ari:cloud:platform::org/test-org-id',
+      scopeId: 'ari:cloud:directory:test-site-id:test-directory-id',
     });
+  });
+
+  it('throws immediately when directoryId is not configured', async () => {
+    const configWithoutDir = { ...config, directoryId: undefined };
+    await expect(createTeam(configWithoutDir, 'Test')).rejects.toThrow('ATLASSIAN_DIRECTORY_ID');
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('throws on non-OK HTTP response', async () => {

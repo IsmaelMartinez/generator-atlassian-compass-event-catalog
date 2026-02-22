@@ -4,6 +4,10 @@ export type TeamsApiConfig = {
   apiToken: string;
   email: string;
   siteId: string;
+  /** Directory UUID from admin.atlassian.com → Security → Identity providers.
+   * Required for team creation via GraphQL (Atlassian Access orgs only).
+   * If absent, createTeam will throw. */
+  directoryId?: string;
 };
 
 export type AtlassianTeam = {
@@ -23,10 +27,14 @@ function orgAri(orgId: string): string {
   return `ari:cloud:platform::org/${orgId}`;
 }
 
+function directoryAri(cloudId: string, directoryId: string): string {
+  return `ari:cloud:directory:${cloudId}:${directoryId}`;
+}
+
 // GraphQL query — teamSearchV2 requires both organizationId (as ARI) and siteId.
 // Returns up to 200 teams; pagination not needed for typical org sizes.
 const LIST_TEAMS_QUERY = `
-  query listTeams($orgAri: ID!, $siteId: ID!) {
+  query listTeams($orgAri: ID!, $siteId: String!) {
     team {
       teamSearchV2(organizationId: $orgAri, siteId: $siteId, first: 200) {
         __typename
@@ -110,8 +118,16 @@ type CreateTeamResponse = {
 };
 
 export async function createTeam(config: TeamsApiConfig, displayName: string): Promise<AtlassianTeam> {
+  if (!config.directoryId) {
+    throw new Error(
+      `Team creation requires ATLASSIAN_DIRECTORY_ID (Atlassian Access managed directory UUID). ` +
+        `Find it under Security → Identity providers in admin.atlassian.com.`
+    );
+  }
+
   const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
   const authHeader = buildAuthHeader(config.email, config.apiToken);
+  const scopeId = directoryAri(config.siteId, config.directoryId);
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -127,7 +143,7 @@ export async function createTeam(config: TeamsApiConfig, displayName: string): P
           displayName,
           description: '',
           membershipSettings: 'MEMBER_INVITE',
-          scopeId: orgAri(config.orgId),
+          scopeId,
         },
       },
     }),

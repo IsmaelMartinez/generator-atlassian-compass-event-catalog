@@ -37,8 +37,10 @@ async function main(): Promise<void> {
   const orgId = requireEnv('ATLASSIAN_ORG_ID');
   const baseUrl = requireEnv('COMPASS_BASE_URL');
 
+  const directoryId = process.env['ATLASSIAN_DIRECTORY_ID'];
+
   const apiConfig: ApiConfig = { cloudId, apiToken: compassToken, email, baseUrl };
-  const teamsConfig: TeamsApiConfig = { baseUrl, orgId, apiToken: teamsToken, email, siteId: cloudId };
+  const teamsConfig: TeamsApiConfig = { baseUrl, orgId, apiToken: teamsToken, email, siteId: cloudId, directoryId };
 
   if (dryRun) console.log(chalk.yellow('[DRY RUN] No changes will be made.\n'));
 
@@ -52,15 +54,25 @@ async function main(): Promise<void> {
 
   // 3. Ensure each team exists in Atlassian
   const teamAriByName = new Map<string, string>();
+  let teamsFailed = 0;
   for (const name of teamNames) {
     if (dryRun) {
       console.log(chalk.yellow(`[DRY RUN] Would ensure team: ${name}`));
       teamAriByName.set(name, `ari:cloud:identity::team/dry-run-${name}`);
     } else {
-      const team: AtlassianTeam = await ensureTeam(teamsConfig, name);
-      teamAriByName.set(name, team.id);
-      console.log(chalk.cyan(`  Team ${name} -> ${team.id}`));
+      try {
+        const team: AtlassianTeam = await ensureTeam(teamsConfig, name);
+        teamAriByName.set(name, team.id);
+        console.log(chalk.cyan(`  Team ${name} -> ${team.id}`));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(chalk.yellow(`  Warning: could not ensure team "${name}": ${msg}`));
+        teamsFailed++;
+      }
     }
+  }
+  if (teamsFailed > 0) {
+    console.warn(chalk.yellow(`\n${teamsFailed} team(s) could not be created/found and will be skipped for assignment.\n`));
   }
 
   // 4. Fetch all Compass components to build name->ARI map
@@ -77,7 +89,7 @@ async function main(): Promise<void> {
   for (const [teamName, componentNames] of Object.entries(mappings)) {
     const teamAri = teamAriByName.get(teamName);
     if (!teamAri) {
-      console.warn(chalk.yellow(`Warning: team "${teamName}" not in tfvars, skipping`));
+      console.warn(chalk.yellow(`Warning: team "${teamName}" not available (not in tfvars or creation failed), skipping`));
       skipped += componentNames.length;
       continue;
     }
