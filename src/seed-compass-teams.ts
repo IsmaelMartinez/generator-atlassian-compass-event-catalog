@@ -1,7 +1,7 @@
 import fs from 'fs';
 import chalk from 'chalk';
 import { parseTeamNames } from './hcl-parser';
-import { ensureTeam, teamToAri, AtlassianTeam, TeamsApiConfig } from './teams-api';
+import { ensureTeam, AtlassianTeam, TeamsApiConfig } from './teams-api';
 import { fetchComponents, updateComponentOwner } from './compass-api';
 import type { ApiConfig } from './types';
 
@@ -58,9 +58,8 @@ async function main(): Promise<void> {
       teamAriByName.set(name, `ari:cloud:identity::team/dry-run-${name}`);
     } else {
       const team: AtlassianTeam = await ensureTeam(teamsConfig, name);
-      const ari = teamToAri(team.id);
-      teamAriByName.set(name, ari);
-      console.log(chalk.cyan(`  Team ${name} -> ${ari}`));
+      teamAriByName.set(name, team.id);
+      console.log(chalk.cyan(`  Team ${name} -> ${team.id}`));
     }
   }
 

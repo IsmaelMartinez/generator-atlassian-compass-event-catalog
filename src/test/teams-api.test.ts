@@ -21,78 +21,143 @@ describe('teamToAri', () => {
 describe('listTeams', () => {
   beforeEach(() => mockFetch.mockReset());
 
-  it('returns an array of teams mapped from entities/teamId fields', async () => {
+  it('returns an array of teams from GraphQL teamSearchV2', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ entities: [{ teamId: 'uuid-1', displayName: 'Team A' }] }),
+      json: async () => ({
+        data: {
+          team: {
+            teamSearchV2: {
+              __typename: 'TeamSearchResultConnectionV2',
+              nodes: [{ team: { id: 'ari:cloud:identity::team/uuid-1', displayName: 'Team A' } }],
+            },
+          },
+        },
+      }),
     });
     const teams = await listTeams(config);
-    expect(teams).toEqual([{ id: 'uuid-1', displayName: 'Team A' }]);
+    expect(teams).toEqual([{ id: 'ari:cloud:identity::team/uuid-1', displayName: 'Team A' }]);
   });
 
-  it('returns empty array when entities is empty', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) });
+  it('returns empty array when nodes is empty', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: { team: { teamSearchV2: { __typename: 'TeamSearchResultConnectionV2', nodes: [] } } },
+      }),
+    });
     const teams = await listTeams(config);
     expect(teams).toEqual([]);
   });
 
   it('sends Basic auth header', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { team: { teamSearchV2: { nodes: [] } } } }),
+    });
     await listTeams(config);
     const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect((init.headers as Record<string, string>)['Authorization']).toMatch(/^Basic /);
   });
 
-  it('calls the correct Teams API endpoint including orgId', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) });
+  it('calls the GraphQL endpoint with orgAri and siteId variables', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { team: { teamSearchV2: { nodes: [] } } } }),
+    });
     await listTeams(config);
-    expect(mockFetch.mock.calls[0][0]).toBe('https://test.atlassian.net/gateway/api/public/teams/v1/org/test-org-id/teams/');
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://test.atlassian.net/gateway/api/graphql');
+    const body = JSON.parse(init.body as string);
+    expect(body.variables).toEqual({
+      orgAri: 'ari:cloud:platform::org/test-org-id',
+      siteId: 'test-site-id',
+    });
   });
 
   it('throws on non-OK response', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
     await expect(listTeams(config)).rejects.toThrow('Teams API request failed with status 401');
   });
+
+  it('throws on GraphQL errors', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ errors: [{ message: 'something went wrong' }] }),
+    });
+    await expect(listTeams(config)).rejects.toThrow('Teams API GraphQL error: something went wrong');
+  });
 });
 
 describe('createTeam', () => {
   beforeEach(() => mockFetch.mockReset());
 
-  it('creates a team and returns it mapped from teamId field', async () => {
+  it('creates a team and returns it', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ teamId: 'new-uuid', displayName: 'New Team' }),
+      json: async () => ({
+        data: {
+          team: {
+            createTeam: {
+              success: true,
+              errors: null,
+              team: { id: 'ari:cloud:identity::team/new-uuid', displayName: 'New Team' },
+            },
+          },
+        },
+      }),
     });
     const team = await createTeam(config, 'New Team');
-    expect(team).toEqual({ id: 'new-uuid', displayName: 'New Team' });
+    expect(team).toEqual({ id: 'ari:cloud:identity::team/new-uuid', displayName: 'New Team' });
   });
 
-  it('sends displayName, teamType, and siteId in request body', async () => {
+  it('sends correct input variables with org ARI as scopeId', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ teamId: 'x', displayName: 'Test' }),
+      json: async () => ({
+        data: {
+          team: {
+            createTeam: {
+              success: true,
+              errors: null,
+              team: { id: 'x', displayName: 'Test' },
+            },
+          },
+        },
+      }),
     });
     await createTeam(config, 'Test');
     const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string);
-    expect(body).toEqual({ displayName: 'Test', teamType: 'MEMBER_INVITE', siteId: 'test-site-id' });
-  });
-
-  it('omits siteId when not configured', async () => {
-    const configWithoutSite = { ...config, siteId: undefined };
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ teamId: 'x', displayName: 'Test' }),
+    expect(body.variables.input).toEqual({
+      displayName: 'Test',
+      description: '',
+      membershipSettings: 'MEMBER_INVITE',
+      scopeId: 'ari:cloud:platform::org/test-org-id',
     });
-    await createTeam(configWithoutSite, 'Test');
-    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-    const body = JSON.parse(init.body as string);
-    expect(body).toEqual({ displayName: 'Test', teamType: 'MEMBER_INVITE' });
   });
 
-  it('throws on non-OK response', async () => {
+  it('throws on non-OK HTTP response', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 403 });
     await expect(createTeam(config, 'Test')).rejects.toThrow('Failed to create team "Test" (HTTP 403)');
+  });
+
+  it('throws when payload contains errors', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          team: {
+            createTeam: {
+              success: false,
+              errors: [{ message: 'Team already exists' }],
+              team: null,
+            },
+          },
+        },
+      }),
+    });
+    await expect(createTeam(config, 'Test')).rejects.toThrow('Team already exists');
   });
 });
 
@@ -102,19 +167,46 @@ describe('ensureTeam', () => {
   it('returns existing team if display name matches (case-insensitive)', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ entities: [{ teamId: 'existing-id', displayName: 'laas-customer-team' }] }),
+      json: async () => ({
+        data: {
+          team: {
+            teamSearchV2: {
+              __typename: 'TeamSearchResultConnectionV2',
+              nodes: [{ team: { id: 'ari:cloud:identity::team/existing-id', displayName: 'laas-customer-team' } }],
+            },
+          },
+        },
+      }),
     });
     const team = await ensureTeam(config, 'LAAS-CUSTOMER-TEAM');
-    expect(team.id).toBe('existing-id');
+    expect(team.id).toBe('ari:cloud:identity::team/existing-id');
     expect(mockFetch).toHaveBeenCalledTimes(1); // only list, no create
   });
 
   it('creates a team when none with that name exists', async () => {
     mockFetch
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ teamId: 'created-id', displayName: 'new-team' }) });
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: { team: { teamSearchV2: { __typename: 'TeamSearchResultConnectionV2', nodes: [] } } },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            team: {
+              createTeam: {
+                success: true,
+                errors: null,
+                team: { id: 'ari:cloud:identity::team/created-id', displayName: 'new-team' },
+              },
+            },
+          },
+        }),
+      });
     const team = await ensureTeam(config, 'new-team');
-    expect(team.id).toBe('created-id');
+    expect(team.id).toBe('ari:cloud:identity::team/created-id');
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
