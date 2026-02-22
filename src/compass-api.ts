@@ -145,6 +145,10 @@ function buildAuthHeader(email: string, apiToken: string): string {
   return `Basic ${Buffer.from(`${email}:${apiToken}`).toString('base64')}`;
 }
 
+function sanitizeText(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function mapTier(value: unknown): 1 | 2 | 3 | 4 | undefined {
   if (value == null) return undefined;
   // Handle numeric values directly
@@ -235,10 +239,11 @@ function mapComponent(component: GraphQLComponent, scorecardNames?: Map<string, 
       let type: CustomFieldType = 'text' as CustomFieldType;
       if (cf.booleanValue !== undefined && cf.booleanValue !== null) type = 'boolean' as CustomFieldType;
       else if (cf.numberValue !== undefined && cf.numberValue !== null) type = 'number' as CustomFieldType;
+      const rawValue = cf.textValue ?? String(cf.booleanValue ?? cf.numberValue ?? '');
       return {
         type,
         name: cf.definition.name,
-        value: cf.textValue ?? String(cf.booleanValue ?? cf.numberValue ?? ''),
+        value: type === 'text' ? sanitizeText(rawValue) : rawValue,
       };
     });
   }

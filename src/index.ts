@@ -211,9 +211,8 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
                 } else {
                   console.warn(chalk.yellow(` - Could not resolve team name for ${rawTeamId}, skipping team creation`));
                 }
-              } catch (err) {
-                const msg = err instanceof Error ? err.message : String(err);
-                console.warn(chalk.yellow(` - Failed to fetch team name for ${rawTeamId}: ${msg}`));
+              } catch {
+                console.warn(chalk.yellow(` - Failed to fetch team name for ${rawTeamId}`));
               }
             } else if (!options.api) {
               // YAML mode: use the UUID as name (no API to resolve)

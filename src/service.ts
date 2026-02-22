@@ -192,6 +192,12 @@ function isRemoteUrl(path: string): boolean {
   return path.startsWith('http://') || path.startsWith('https://');
 }
 
+function sanitizeLocalPath(path: string): string | null {
+  // Reject absolute paths and path traversal sequences
+  if (path.startsWith('/') || /(?:^|[\\/])\.\.(?:[\\/]|$)/.test(path)) return null;
+  return path;
+}
+
 function getSpecifications(config: CompassConfig): Array<{ type: SpecType; path: string; name?: string }> {
   if (!config.links) return [];
   const specs: Array<{ type: SpecType; path: string; name?: string }> = [];
@@ -200,11 +206,13 @@ function getSpecifications(config: CompassConfig): Array<{ type: SpecType; path:
     // Skip remote URLs — EventCatalog expects local file paths for specifications.
     // Remote links are already rendered in the markdown body.
     if (isRemoteUrl(link.url)) continue;
+    const safePath = sanitizeLocalPath(link.url);
+    if (!safePath) continue;
     const nameLower = link.name.toLowerCase();
     if (nameLower.includes('openapi') || nameLower.includes('swagger')) {
-      specs.push({ type: 'openapi', path: link.url, name: link.name });
+      specs.push({ type: 'openapi', path: safePath, name: link.name });
     } else if (nameLower.includes('asyncapi')) {
-      specs.push({ type: 'asyncapi', path: link.url, name: link.name });
+      specs.push({ type: 'asyncapi', path: safePath, name: link.name });
     }
   }
   return specs;
