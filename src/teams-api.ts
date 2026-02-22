@@ -1,4 +1,4 @@
-type TeamsApiConfig = {
+export type TeamsApiConfig = {
   baseUrl: string;
   orgId: string;
   apiToken: string;

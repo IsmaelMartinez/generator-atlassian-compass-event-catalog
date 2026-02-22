@@ -36,6 +36,12 @@ describe('listTeams', () => {
     expect((init.headers as Record<string, string>)['Authorization']).toMatch(/^Basic /);
   });
 
+  it('calls the correct Teams API endpoint including orgId', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ results: [] }) });
+    await listTeams(config);
+    expect(mockFetch.mock.calls[0][0]).toBe('https://test.atlassian.net/gateway/api/public/teams/v1/org/test-org-id/teams');
+  });
+
   it('throws on non-OK response', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
     await expect(listTeams(config)).rejects.toThrow('Teams API request failed with status 401');
@@ -79,9 +85,9 @@ describe('ensureTeam', () => {
       ok: true,
       json: async () => ({ results: [{ id: 'existing-id', displayName: 'laas-customer-team' }] }),
     });
-    const team = await ensureTeam(config, 'laas-customer-team');
+    const team = await ensureTeam(config, 'LAAS-CUSTOMER-TEAM');
     expect(team.id).toBe('existing-id');
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1); // only list, no create
   });
 
   it('creates a team when none with that name exists', async () => {
