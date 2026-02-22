@@ -627,20 +627,21 @@ describe('updateComponentOwner', () => {
         data: {
           compass: {
             updateComponent: {
-              __typename: 'CompassUpdateComponentPayload',
-              componentDetails: { id: 'comp-ari', ownerId: 'ari:cloud:teams::team/team-uuid' },
+              success: true,
+              errors: null,
+              componentDetails: { id: 'comp-ari', ownerId: 'ari:cloud:identity::team/team-uuid' },
             },
           },
         },
       }),
     });
 
-    await updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:teams::team/team-uuid');
+    await updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:identity::team/team-uuid');
 
     const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string);
     expect(body.variables).toEqual({
-      input: { id: 'comp-ari', ownerId: 'ari:cloud:teams::team/team-uuid' },
+      input: { id: 'comp-ari', ownerId: 'ari:cloud:identity::team/team-uuid' },
     });
   });
 
@@ -650,24 +651,24 @@ describe('updateComponentOwner', () => {
       json: async () => ({ errors: [{ message: 'not authorised' }] }),
     });
 
-    await expect(updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:teams::team/team-uuid')).rejects.toThrow(
+    await expect(updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:identity::team/team-uuid')).rejects.toThrow(
       'not authorised'
     );
   });
 
-  it('throws when payload typename is QueryError', async () => {
+  it('throws when payload contains errors array', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         data: {
           compass: {
-            updateComponent: { __typename: 'QueryError', message: 'component not found' },
+            updateComponent: { success: false, errors: [{ message: 'component not found' }] },
           },
         },
       }),
     });
 
-    await expect(updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:teams::team/team-uuid')).rejects.toThrow(
+    await expect(updateComponentOwner(apiConfig, 'comp-ari', 'ari:cloud:identity::team/team-uuid')).rejects.toThrow(
       'Compass update component error: component not found'
     );
   });

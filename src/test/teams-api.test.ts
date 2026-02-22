@@ -12,8 +12,8 @@ const config = {
 };
 
 describe('teamToAri', () => {
-  it('wraps a plain UUID in the Atlassian teams ARI format', () => {
-    expect(teamToAri('abc-123')).toBe('ari:cloud:teams::team/abc-123');
+  it('wraps a plain UUID in the Atlassian identity ARI format', () => {
+    expect(teamToAri('abc-123')).toBe('ari:cloud:identity::team/abc-123');
   });
 });
 

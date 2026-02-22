@@ -495,11 +495,9 @@ const UPDATE_COMPONENT_MUTATION = `
   mutation updateComponent($input: CompassUpdateComponentInput!) {
     compass {
       updateComponent(input: $input) {
-        __typename
-        ... on CompassUpdateComponentPayload {
-          componentDetails { id ownerId }
-        }
-        ... on QueryError { message identifier }
+        success
+        errors { message }
+        componentDetails { id ownerId }
       }
     }
   }
@@ -509,9 +507,9 @@ type UpdateComponentResponse = {
   data?: {
     compass: {
       updateComponent: {
-        __typename: string;
+        success: boolean;
+        errors: Array<{ message: string }> | null;
         componentDetails?: { id: string; ownerId: string | null };
-        message?: string;
       };
     };
   };
@@ -552,7 +550,7 @@ export async function updateComponentOwner(
   }
 
   const payload = result.data?.compass?.updateComponent;
-  if (payload?.__typename === 'QueryError') {
-    throw new Error(`Compass update component error: ${payload.message ?? 'unknown error'}`);
+  if (payload?.errors && payload.errors.length > 0) {
+    throw new Error(`Compass update component error: ${payload.errors[0].message}`);
   }
 }

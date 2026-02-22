@@ -54,7 +54,7 @@ async function main(): Promise<void> {
   for (const name of teamNames) {
     if (dryRun) {
       console.log(chalk.yellow(`[DRY RUN] Would ensure team: ${name}`));
-      teamAriByName.set(name, `ari:cloud:teams::team/dry-run-${name}`);
+      teamAriByName.set(name, `ari:cloud:identity::team/dry-run-${name}`);
     } else {
       const team: AtlassianTeam = await ensureTeam(teamsConfig, name);
       const ari = teamToAri(team.id);

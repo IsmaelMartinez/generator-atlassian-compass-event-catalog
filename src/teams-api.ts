@@ -11,7 +11,7 @@ export type AtlassianTeam = {
 };
 
 export function teamToAri(teamId: string): string {
-  return `ari:cloud:teams::team/${teamId}`;
+  return `ari:cloud:identity::team/${teamId}`;
 }
 
 function buildAuthHeader(email: string, apiToken: string): string {
