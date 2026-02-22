@@ -20,24 +20,30 @@ describe('teamToAri', () => {
 describe('listTeams', () => {
   beforeEach(() => mockFetch.mockReset());
 
-  it('returns an array of teams', async () => {
+  it('returns an array of teams mapped from entities/teamId fields', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ results: [{ id: 'uuid-1', displayName: 'Team A' }] }),
+      json: async () => ({ entities: [{ teamId: 'uuid-1', displayName: 'Team A' }] }),
     });
     const teams = await listTeams(config);
     expect(teams).toEqual([{ id: 'uuid-1', displayName: 'Team A' }]);
   });
 
+  it('returns empty array when entities is empty', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) });
+    const teams = await listTeams(config);
+    expect(teams).toEqual([]);
+  });
+
   it('sends Basic auth header', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ results: [] }) });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) });
     await listTeams(config);
     const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect((init.headers as Record<string, string>)['Authorization']).toMatch(/^Basic /);
   });
 
   it('calls the correct Teams API endpoint including orgId', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ results: [] }) });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) });
     await listTeams(config);
     expect(mockFetch.mock.calls[0][0]).toBe('https://test.atlassian.net/gateway/api/public/teams/v1/org/test-org-id/teams');
   });
@@ -51,10 +57,10 @@ describe('listTeams', () => {
 describe('createTeam', () => {
   beforeEach(() => mockFetch.mockReset());
 
-  it('creates a team and returns it', async () => {
+  it('creates a team and returns it mapped from teamId field', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'new-uuid', displayName: 'New Team' }),
+      json: async () => ({ teamId: 'new-uuid', displayName: 'New Team' }),
     });
     const team = await createTeam(config, 'New Team');
     expect(team).toEqual({ id: 'new-uuid', displayName: 'New Team' });
@@ -63,7 +69,7 @@ describe('createTeam', () => {
   it('sends displayName and type in request body', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'x', displayName: 'Test' }),
+      json: async () => ({ teamId: 'x', displayName: 'Test' }),
     });
     await createTeam(config, 'Test');
     const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
@@ -83,7 +89,7 @@ describe('ensureTeam', () => {
   it('returns existing team if display name matches (case-insensitive)', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ results: [{ id: 'existing-id', displayName: 'laas-customer-team' }] }),
+      json: async () => ({ entities: [{ teamId: 'existing-id', displayName: 'laas-customer-team' }] }),
     });
     const team = await ensureTeam(config, 'LAAS-CUSTOMER-TEAM');
     expect(team.id).toBe('existing-id');
@@ -92,8 +98,8 @@ describe('ensureTeam', () => {
 
   it('creates a team when none with that name exists', async () => {
     mockFetch
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ results: [] }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'created-id', displayName: 'new-team' }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ entities: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ teamId: 'created-id', displayName: 'new-team' }) });
     const team = await ensureTeam(config, 'new-team');
     expect(team.id).toBe('created-id');
     expect(mockFetch).toHaveBeenCalledTimes(2);

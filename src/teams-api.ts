@@ -34,8 +34,8 @@ export async function listTeams(config: TeamsApiConfig): Promise<AtlassianTeam[]
     throw new Error(`Teams API request failed with status ${response.status}`);
   }
 
-  const data = (await response.json()) as { results: AtlassianTeam[] };
-  return data.results;
+  const data = (await response.json()) as { entities: Array<{ teamId: string; displayName: string }> };
+  return (data.entities ?? []).map((e) => ({ id: e.teamId, displayName: e.displayName }));
 }
 
 export async function createTeam(config: TeamsApiConfig, displayName: string): Promise<AtlassianTeam> {
@@ -53,7 +53,8 @@ export async function createTeam(config: TeamsApiConfig, displayName: string): P
     throw new Error(`Failed to create team "${displayName}" (HTTP ${response.status})`);
   }
 
-  return (await response.json()) as AtlassianTeam;
+  const data = (await response.json()) as { teamId: string; displayName: string };
+  return { id: data.teamId, displayName: data.displayName };
 }
 
 export async function ensureTeam(config: TeamsApiConfig, displayName: string): Promise<AtlassianTeam> {
