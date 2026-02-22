@@ -4,6 +4,7 @@
   "description": "Atlassian Compass generator for Event Catalog",
   "scripts": {
     "build": "tsup",
+    "seed-compass-teams": "tsx src/seed-compass-teams.ts",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write .",
@@ -48,6 +49,7 @@
     "lint-staged": "^16.2.6",
     "prettier": "^3.5.3",
     "tsup": "^8.4.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.2",
     "vitest": "^4.0.0"
   },
