@@ -17,6 +17,7 @@ const expectedMarkdown = `## Links
 * 🧭 [Compass Component](https://compass.atlassian.com/component/00000000-0000-0000-0000-000000000000)
 * 🪂 [Compass Team](https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000)
 * 🚀 [My Jira project](https://www.example.com/projects/myproject)
+* ⭐ [www.example.com](https://www.example.com/resources/)
 * 👀 [Service dashboard](https://www.example.com/dashboards/service-dashboard)
 * 🏡 [Service repository](https://www.example.com/repos/my-service-repo)
 
@@ -648,8 +649,8 @@ describe('Atlassian Compass generator tests', () => {
       expect(service).toBeDefined();
       // my-service depends on my-application and my-library
       expect(service.markdown).toContain('## Dependencies');
-      expect(service.markdown).toContain('[my-application](/docs/services/my-application)');
-      expect(service.markdown).toContain('[my-library](/docs/services/my-library)');
+      expect(service.markdown).toContain('[my-application](../../my-application/)');
+      expect(service.markdown).toContain('[my-library](../../my-library/)');
     });
 
     it('resolves partial dependencies when only some targets are processed', async () => {
@@ -663,7 +664,7 @@ describe('Atlassian Compass generator tests', () => {
 
       const service = await getService('my-service');
       expect(service).toBeDefined();
-      expect(service.markdown).toContain('[my-application](/docs/services/my-application)');
+      expect(service.markdown).toContain('[my-application](../../my-application/)');
       // my-library was not processed, so it should not appear as a resolved dependency link
       expect(service.markdown).not.toContain('[my-library]');
     });
@@ -698,7 +699,7 @@ describe('Atlassian Compass generator tests', () => {
       const service = await getService('my-other-component');
       expect(service).toBeDefined();
       // Should resolve the one that exists
-      expect(service.markdown).toContain('[my-application](/docs/services/my-application)');
+      expect(service.markdown).toContain('[my-application](../../my-application/)');
       // Should not crash due to the non-existent dependency
     });
 
@@ -717,8 +718,8 @@ describe('Atlassian Compass generator tests', () => {
       const service = await getService('custom-service');
       expect(service).toBeDefined();
       // Dependencies should use custom IDs
-      expect(service.markdown).toContain('[my-application](/docs/services/custom-app)');
-      expect(service.markdown).toContain('[my-library](/docs/services/custom-lib)');
+      expect(service.markdown).toContain('[my-application](../../custom-app/)');
+      expect(service.markdown).toContain('[my-library](../../custom-lib/)');
     });
 
     it('includes resolved dependencies in service markdown within a domain', async () => {
@@ -745,8 +746,8 @@ describe('Atlassian Compass generator tests', () => {
       const service = await getService('my-service');
       expect(service).toBeDefined();
       expect(service.markdown).toContain('## Dependencies');
-      expect(service.markdown).toContain('[my-application](/docs/services/my-application)');
-      expect(service.markdown).toContain('[my-library](/docs/services/my-library)');
+      expect(service.markdown).toContain('[my-application](../../my-application/)');
+      expect(service.markdown).toContain('[my-library](../../my-library/)');
     });
   });
 
@@ -915,7 +916,7 @@ describe('Atlassian Compass generator tests', () => {
   });
 
   describe('OpenAPI spec attachment from links', () => {
-    it('attaches OpenAPI specifications from links with "openapi" in name', async () => {
+    it('skips remote URL specifications (EventCatalog requires local file paths)', async () => {
       const { getService } = utils(catalogDir);
 
       await plugin(eventCatalogConfig, {
@@ -925,29 +926,8 @@ describe('Atlassian Compass generator tests', () => {
 
       const service = await getService('my-openapi-service');
       expect(service).toBeDefined();
-      expect(service.specifications).toBeDefined();
-      expect(service.specifications).toContainEqual({
-        type: 'openapi',
-        path: 'https://api.example.com/openapi.yaml',
-        name: 'OpenAPI Spec',
-      });
-    });
-
-    it('attaches OpenAPI specifications from links with "swagger" in name', async () => {
-      const { getService } = utils(catalogDir);
-
-      await plugin(eventCatalogConfig, {
-        services: [{ path: join(__dirname, 'my-openapi-service-compass.yml') }],
-        compassUrl: 'https://compass.atlassian.com',
-      });
-
-      const service = await getService('my-openapi-service');
-      expect(service).toBeDefined();
-      expect(service.specifications).toContainEqual({
-        type: 'openapi',
-        path: 'https://api.example.com/swagger.json',
-        name: 'Swagger Documentation',
-      });
+      // Remote URLs are skipped — they are already rendered as links in the markdown body
+      expect(service.specifications).toBeUndefined();
     });
 
     it('does not attach specifications when no openapi/swagger links exist', async () => {
@@ -1127,7 +1107,7 @@ describe('Atlassian Compass generator tests', () => {
   });
 
   describe('AsyncAPI spec support', () => {
-    it('attaches AsyncAPI specifications from links with "asyncapi" in name', async () => {
+    it('skips remote AsyncAPI URLs (EventCatalog requires local file paths)', async () => {
       const { getService } = utils(catalogDir);
 
       await plugin(eventCatalogConfig, {
@@ -1137,37 +1117,8 @@ describe('Atlassian Compass generator tests', () => {
 
       const service = await getService('my-asyncapi-service');
       expect(service).toBeDefined();
-      expect(service.specifications).toBeDefined();
-      expect(service.specifications).toContainEqual({
-        type: 'asyncapi',
-        path: 'https://api.example.com/asyncapi.yaml',
-        name: 'AsyncAPI Events Spec',
-      });
-    });
-
-    it('attaches both OpenAPI and AsyncAPI specs from the same service', async () => {
-      const { getService } = utils(catalogDir);
-
-      // my-openapi-service has openapi and swagger links; let's test the asyncapi one separately
-      // This verifies asyncapi detection doesn't interfere with openapi detection
-      await plugin(eventCatalogConfig, {
-        services: [{ path: join(__dirname, 'my-openapi-service-compass.yml') }],
-        compassUrl: 'https://compass.atlassian.com',
-      });
-
-      const service = await getService('my-openapi-service');
-      expect(service).toBeDefined();
-      // Should still detect openapi and swagger specs
-      expect(service.specifications).toContainEqual({
-        type: 'openapi',
-        path: 'https://api.example.com/openapi.yaml',
-        name: 'OpenAPI Spec',
-      });
-      expect(service.specifications).toContainEqual({
-        type: 'openapi',
-        path: 'https://api.example.com/swagger.json',
-        name: 'Swagger Documentation',
-      });
+      // Remote URLs are skipped
+      expect(service.specifications).toBeUndefined();
     });
 
     it('does not attach specifications when no asyncapi/openapi links exist', async () => {

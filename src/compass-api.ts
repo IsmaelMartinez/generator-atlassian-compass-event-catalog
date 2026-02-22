@@ -15,11 +15,9 @@ type GraphQLField = {
 };
 
 type GraphQLScorecardScore = {
-  scorecard: {
-    name: string;
-  };
-  score: number;
-  maxScore: number;
+  scorecardId: string;
+  totalScore: number;
+  maxTotalScore: number;
 };
 
 type GraphQLComponent = {
@@ -35,14 +33,14 @@ type GraphQLComponent = {
     name: string | null;
   }> | null;
   relationships: {
-    nodes: Array<{
-      type: string;
-      nodeId: string;
+    nodes?: Array<{
+      relationshipType: string;
+      endNode: { id: string } | null;
     }>;
   } | null;
   labels: Array<{ name: string }> | null;
   customFields: Array<{
-    definition: { name: string; type: string };
+    definition: { name: string };
     textValue?: string;
     booleanValue?: boolean;
     numberValue?: number;
@@ -50,16 +48,21 @@ type GraphQLComponent = {
   scorecardScores: GraphQLScorecardScore[] | null;
 };
 
+type SearchComponentsResult = {
+  __typename: string;
+  nodes?: Array<{ component: GraphQLComponent }>;
+  pageInfo?: {
+    hasNextPage: boolean;
+    endCursor: string | null;
+  };
+  message?: string;
+  identifier?: string;
+};
+
 type SearchComponentsResponse = {
   data?: {
     compass: {
-      searchComponents: {
-        nodes: Array<{ component: GraphQLComponent }>;
-        pageInfo: {
-          hasNextPage: boolean;
-          endCursor: string | null;
-        };
-      };
+      searchComponents: SearchComponentsResult;
     };
   };
   errors?: Array<{ message: string }>;
@@ -71,12 +74,14 @@ type SearchComponentsResponse = {
 // - Lifecycle/tier use CompassEnumField fragment: `fields { definition { name } ... on CompassEnumField { value } }`
 // - Relationship nodes use `nodeId` (matching creation API input)
 const SEARCH_COMPONENTS_QUERY = `
-  query searchComponents($cloudId: String!, $after: String, $types: [CompassComponentType!]) {
+  query searchComponents($cloudId: String!, $after: String) {
     compass {
       searchComponents(
         cloudId: $cloudId
-        query: { after: $after, first: 50, componentTypes: $types }
+        query: { after: $after, first: 50 }
       ) {
+        __typename
+        ... on QueryError { message identifier }
         ... on CompassSearchComponentConnection {
           nodes {
             component {
@@ -95,22 +100,24 @@ const SEARCH_COMPONENTS_QUERY = `
                 name
               }
               relationships {
-                nodes {
-                  type
-                  nodeId
+                ... on CompassRelationshipConnection {
+                  nodes {
+                    relationshipType
+                    endNode { id }
+                  }
                 }
               }
               labels { name }
               customFields {
-                definition { name type }
-                textValue
-                booleanValue
-                numberValue
+                definition { name }
+                ... on CompassCustomTextField { textValue }
+                ... on CompassCustomBooleanField { booleanValue }
+                ... on CompassCustomNumberField { numberValue }
               }
               scorecardScores {
-                scorecard { name }
-                score
-                maxScore
+                scorecardId
+                totalScore
+                maxTotalScore
               }
             }
           }
@@ -138,9 +145,19 @@ function buildAuthHeader(email: string, apiToken: string): string {
   return `Basic ${Buffer.from(`${email}:${apiToken}`).toString('base64')}`;
 }
 
-function mapTier(value: string | null | undefined): 1 | 2 | 3 | 4 | undefined {
-  if (!value) return undefined;
-  const match = value.match(/(\d)/);
+function sanitizeText(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function mapTier(value: unknown): 1 | 2 | 3 | 4 | undefined {
+  if (value == null) return undefined;
+  // Handle numeric values directly
+  if (typeof value === 'number') {
+    if (value >= 1 && value <= 4) return value as 1 | 2 | 3 | 4;
+    return undefined;
+  }
+  const str = String(value);
+  const match = str.match(/(\d)/);
   if (match) {
     const num = parseInt(match[1], 10);
     if (num >= 1 && num <= 4) return num as 1 | 2 | 3 | 4;
@@ -148,17 +165,19 @@ function mapTier(value: string | null | undefined): 1 | 2 | 3 | 4 | undefined {
   return undefined;
 }
 
-function mapLifecycle(value: string | null | undefined): string | undefined {
-  if (!value) return undefined;
+function mapLifecycle(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  const str = String(value);
+  if (!str) return undefined;
   // API may return uppercase (ACTIVE) or title case (Active) — normalize both
-  const normalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+  const normalized = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   const valid: Record<string, string> = {
     Active: 'Active',
     'Pre-release': 'Pre-release',
     Prerelease: 'Pre-release',
     Deprecated: 'Deprecated',
   };
-  return valid[normalized] || valid[value];
+  return valid[normalized] || valid[str];
 }
 
 function extractField(fields: GraphQLField[] | null, fieldName: string): string | undefined {
@@ -167,7 +186,15 @@ function extractField(fields: GraphQLField[] | null, fieldName: string): string 
   return field?.value || undefined;
 }
 
-function mapComponent(component: GraphQLComponent): CompassConfig {
+// Extract a readable name from a scorecard ARI (e.g., ari:cloud:compass:...:scorecard/.../UUID → UUID).
+// If the value is already a plain name (no colons), return it as-is.
+function extractScorecardName(scorecardId: string): string {
+  if (!scorecardId.includes(':')) return scorecardId;
+  const parts = scorecardId.split('/');
+  return parts[parts.length - 1] || scorecardId;
+}
+
+function mapComponent(component: GraphQLComponent, scorecardNames?: Map<string, string>): CompassConfig {
   const config: CompassConfig = {
     name: component.name,
     id: component.id,
@@ -194,7 +221,9 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
   }
 
   if (component.relationships?.nodes && component.relationships.nodes.length > 0) {
-    const dependsOn = component.relationships.nodes.filter((r) => r.type === 'DEPENDS_ON').map((r) => r.nodeId);
+    const dependsOn = component.relationships.nodes
+      .filter((r) => r.relationshipType === 'DEPENDS_ON' && r.endNode?.id)
+      .map((r) => r.endNode!.id);
     if (dependsOn.length > 0) {
       config.relationships = { DEPENDS_ON: dependsOn };
     }
@@ -205,33 +234,38 @@ function mapComponent(component: GraphQLComponent): CompassConfig {
   }
 
   if (component.customFields && component.customFields.length > 0) {
-    config.customFields = component.customFields.map((cf) => ({
-      type: cf.definition.type as CustomFieldType,
-      name: cf.definition.name,
-      value: cf.textValue ?? String(cf.booleanValue ?? cf.numberValue ?? ''),
-    }));
+    config.customFields = component.customFields.map((cf) => {
+      // Infer type from which value field is populated (API doesn't expose type on definition)
+      let type: CustomFieldType = 'text' as CustomFieldType;
+      if (cf.booleanValue !== undefined && cf.booleanValue !== null) type = 'boolean' as CustomFieldType;
+      else if (cf.numberValue !== undefined && cf.numberValue !== null) type = 'number' as CustomFieldType;
+      const rawValue = cf.textValue ?? String(cf.booleanValue ?? cf.numberValue ?? '');
+      return {
+        type,
+        name: cf.definition.name,
+        value: type === 'text' ? sanitizeText(rawValue) : rawValue,
+      };
+    });
   }
 
   if (component.scorecardScores && component.scorecardScores.length > 0) {
     config.scorecards = component.scorecardScores.map((sc) => ({
-      name: sc.scorecard.name,
-      score: sc.score,
-      maxScore: sc.maxScore,
+      name: scorecardNames?.get(sc.scorecardId) ?? extractScorecardName(sc.scorecardId),
+      score: sc.totalScore,
+      maxScore: sc.maxTotalScore,
     }));
   }
 
   return config;
 }
 
-// GraphQL query to fetch a team's display name by team ID
+// GraphQL query to fetch a team's display name — uses Teams v2 API
 const GET_TEAM_QUERY = `
-  query getTeam($teamId: String!) {
+  query getTeam($teamId: ID!, $siteId: String!) {
     team {
-      teamById(teamId: $teamId) {
-        team {
-          teamId
-          displayName
-        }
+      teamV2(id: $teamId, siteId: $siteId) {
+        id
+        displayName
       }
     }
   }
@@ -240,19 +274,17 @@ const GET_TEAM_QUERY = `
 type GetTeamResponse = {
   data?: {
     team: {
-      teamById: {
-        team: {
-          teamId: string;
-          displayName: string;
-        } | null;
-      };
+      teamV2: {
+        id: string;
+        displayName: string;
+      } | null;
     };
   };
   errors?: Array<{ message: string }>;
 };
 
 export async function fetchTeamById(
-  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl'>,
+  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl' | 'cloudId'>,
   teamId: string
 ): Promise<{ id: string; displayName: string } | null> {
   const resolvedToken = resolveValue(config.apiToken);
@@ -260,38 +292,133 @@ export async function fetchTeamById(
   const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
   const authHeader = buildAuthHeader(resolvedEmail, resolvedToken);
 
+  // The Teams v2 API expects the full ARI as ID — construct it if we only have a UUID
+  const teamAri = teamId.startsWith('ari:') ? teamId : `ari:cloud:identity::team/${teamId}`;
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: authHeader,
       Accept: 'application/json',
+      'X-ExperimentalApi': 'teams-beta',
     },
     body: JSON.stringify({
       query: GET_TEAM_QUERY,
-      variables: { teamId },
+      variables: { teamId: teamAri, siteId: config.cloudId },
     }),
   });
 
   if (!response.ok) {
+    console.warn(`Team API request failed for ${teamId} (HTTP ${response.status})`);
     return null;
   }
 
   const result = (await response.json()) as GetTeamResponse;
 
-  if (result.errors || !result.data) {
+  if (result.errors) {
+    console.warn(`Team API GraphQL error for ${teamId}: ${result.errors[0]?.message}`);
     return null;
   }
 
-  const team = result.data.team.teamById.team;
+  if (!result.data) {
+    console.warn(`Team API returned no data for ${teamId}`);
+    return null;
+  }
+
+  const team = result.data.team?.teamV2;
   if (!team) {
+    console.warn(`Team not found for ID ${teamId}`);
     return null;
   }
 
-  return { id: team.teamId, displayName: team.displayName };
+  return { id: team.id, displayName: team.displayName };
 }
 
-export async function fetchComponents(config: ApiConfig): Promise<CompassConfig[]> {
+// GraphQL query to fetch all scorecards for the cloud instance
+const GET_SCORECARDS_QUERY = `
+  query getScorecards($cloudId: ID!) {
+    compass {
+      scorecards(cloudId: $cloudId, query: { first: 100 }) {
+        __typename
+        ... on QueryError { message identifier }
+        ... on CompassScorecardConnection {
+          nodes {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+type GetScorecardsResponse = {
+  data?: {
+    compass: {
+      scorecards: {
+        __typename: string;
+        nodes?: Array<{ id: string; name: string }>;
+        message?: string;
+      };
+    };
+  };
+  errors?: Array<{ message: string }>;
+};
+
+export async function fetchScorecardNames(
+  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl' | 'cloudId'>
+): Promise<Map<string, string>> {
+  const resolvedToken = resolveValue(config.apiToken);
+  const resolvedEmail = resolveValue(config.email);
+  const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
+  const authHeader = buildAuthHeader(resolvedEmail, resolvedToken);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader,
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query: GET_SCORECARDS_QUERY,
+        variables: { cloudId: config.cloudId },
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`Could not fetch scorecard names (HTTP ${response.status}), will use short IDs`);
+      return new Map();
+    }
+
+    const result = (await response.json()) as GetScorecardsResponse;
+    if (result.errors) {
+      console.warn(`Scorecard API GraphQL error: ${result.errors[0]?.message}, will use short IDs`);
+      return new Map();
+    }
+
+    const scorecards = result.data?.compass?.scorecards;
+    if (!scorecards?.nodes) {
+      const errorMsg = scorecards?.message || 'no data returned';
+      console.warn(`Could not fetch scorecard names (${errorMsg}), will use short IDs`);
+      return new Map();
+    }
+
+    const map = new Map<string, string>();
+    for (const sc of scorecards.nodes) {
+      map.set(sc.id, sc.name);
+    }
+    console.log(`Fetched ${map.size} scorecard name(s) from Compass API`);
+    return map;
+  } catch {
+    console.warn('Failed to fetch scorecard names, will use short IDs');
+    return new Map();
+  }
+}
+
+export async function fetchComponents(config: ApiConfig, scorecardNames?: Map<string, string>): Promise<CompassConfig[]> {
   const resolvedToken = resolveValue(config.apiToken);
   const resolvedEmail = resolveValue(config.email);
   const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
@@ -306,10 +433,6 @@ export async function fetchComponents(config: ApiConfig): Promise<CompassConfig[
       cloudId: config.cloudId,
       after: cursor,
     };
-
-    if (config.typeFilter && config.typeFilter.length > 0) {
-      variables.types = config.typeFilter;
-    }
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -348,8 +471,17 @@ export async function fetchComponents(config: ApiConfig): Promise<CompassConfig[
     }
 
     const searchResult = result.data.compass.searchComponents;
+
+    if (searchResult.__typename === 'QueryError') {
+      throw new Error(`Compass API error: ${searchResult.message || 'Unknown error'}`);
+    }
+
+    if (!searchResult.nodes || !searchResult.pageInfo) {
+      throw new Error('Compass API returned unexpected response structure');
+    }
+
     for (const node of searchResult.nodes) {
-      components.push(mapComponent(node.component));
+      components.push(mapComponent(node.component, scorecardNames));
     }
 
     hasNextPage = searchResult.pageInfo.hasNextPage;

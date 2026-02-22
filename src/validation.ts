@@ -34,6 +34,8 @@ export const GeneratorPropsSchema = z
     debug: z.boolean().optional(),
     overrideExisting: z.boolean().optional(),
     typeFilter: z.array(z.string().min(1)).optional(),
+    nameFilter: z.array(z.string().min(1)).optional(),
+    nameMapping: z.record(z.string().min(1), z.string().min(1)).optional(),
     markdownTemplate: z.function().optional(),
     format: z.enum(['md', 'mdx']).optional(),
     serviceIdStrategy: ServiceIdStrategySchema.optional(),

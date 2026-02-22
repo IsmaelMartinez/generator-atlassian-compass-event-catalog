@@ -5,7 +5,7 @@ import { loadService, extractTeamId } from './service';
 import Domain from './domain';
 import { GeneratorProps, ResolvedDependency, ServiceIdStrategy } from './types';
 import { GeneratorPropsSchema } from './validation';
-import { fetchComponents, fetchTeamById } from './compass-api';
+import { fetchComponents, fetchTeamById, fetchScorecardNames } from './compass-api';
 
 // Sanitize IDs to prevent path traversal from untrusted sources
 function sanitizeId(id: string): string {
@@ -100,7 +100,8 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   if (options.api) {
     // API mode: fetch components from Compass GraphQL API
     console.log(chalk.green('Fetching components from Compass API...'));
-    const components = await fetchComponents(options.api);
+    const scorecardNames = await fetchScorecardNames(options.api);
+    const components = await fetchComponents(options.api, scorecardNames);
     console.log(chalk.green(`Fetched ${components.length} components from Compass API`));
 
     for (const config of components) {
@@ -112,7 +113,16 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
         }
       }
 
-      const serviceId = resolveServiceId(config, options.serviceIdStrategy);
+      // Apply nameFilter to only process specific components
+      if (options.nameFilter && options.nameFilter.length > 0) {
+        if (!options.nameFilter.includes(config.name)) {
+          continue;
+        }
+      }
+
+      // Apply nameMapping: if the component name has a mapping, use the mapped value as service ID
+      const mappedId = options.nameMapping?.[config.name];
+      const serviceId = mappedId ? sanitizeId(mappedId) : resolveServiceId(config, options.serviceIdStrategy);
       if (config.id) {
         serviceMap.set(config.id, { serviceId, name: config.name });
       }
@@ -192,24 +202,26 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
           const teamId = sanitizeId(rawTeamId);
           if (!teamsWritten.has(teamId)) {
             // In API mode, try to fetch team display name from Compass
-            let teamName = teamId;
+            let teamName: string | null = null;
             if (options.api && !dryRun) {
               try {
                 const teamData = await fetchTeamById(options.api, rawTeamId);
                 if (teamData?.displayName) {
                   teamName = sanitizeText(teamData.displayName);
+                } else {
+                  console.warn(chalk.yellow(` - Could not resolve team name for ${rawTeamId}, skipping team creation`));
                 }
               } catch {
-                // Fall back to UUID if team fetch fails
-                if (options.debug) {
-                  console.debug(chalk.magenta(` - Could not fetch team name for ${rawTeamId}, using UUID`));
-                }
+                console.warn(chalk.yellow(` - Failed to fetch team name for ${rawTeamId}`));
               }
+            } else if (!options.api) {
+              // YAML mode: use the UUID as name (no API to resolve)
+              teamName = teamId;
             }
-            if (!dryRun) {
+            if (teamName && !dryRun) {
               await writeTeam({ id: teamId, name: teamName, markdown: '' }, { override: true });
               console.log(chalk.cyan(` - Team ${teamId} (${teamName}) created`));
-            } else {
+            } else if (teamName && dryRun) {
               console.log(chalk.yellow(` - [DRY RUN] Would create team ${teamId} (${teamName})`));
             }
             teamsWritten.add(teamId);

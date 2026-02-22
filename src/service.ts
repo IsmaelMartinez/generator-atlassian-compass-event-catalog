@@ -134,19 +134,21 @@ export const defaultMarkdown = (
   const safeTeamUrl = compassTeamUrl ? sanitizeUrl(compassTeamUrl) : '';
 
   const linkLines = config.links
-    ?.filter((link) => link.name)
-    .map((link) => {
-      const safeName = sanitizeMarkdownText(link.name || '');
+    ?.map((link) => {
       const safeUrl = sanitizeUrl(link.url);
       if (!safeUrl) return null;
-      return `* ${UrlTypeToIcon[link.type]} [${safeName}](${safeUrl})`;
+      // Use link name if available, otherwise derive a label from the URL or link type
+      const label = link.name || new URL(safeUrl).hostname;
+      const safeName = sanitizeMarkdownText(label);
+      const icon = UrlTypeToIcon[link.type] || '🔗';
+      return `* ${icon} [${safeName}](${safeUrl})`;
     })
     .filter(Boolean)
     .join('\n');
 
   const dependencyLines =
     dependencies && dependencies.length > 0
-      ? dependencies.map((dep) => `* [${sanitizeMarkdownText(dep.name)}](/docs/services/${dep.id})`).join('\n')
+      ? dependencies.map((dep) => `* [${sanitizeMarkdownText(dep.name)}](../../${dep.id}/)`).join('\n')
       : 'No known dependencies.';
 
   return `
@@ -186,22 +188,31 @@ const getTeamUrl = (compassUrl: string, config: CompassConfig) => {
 
 type SpecType = 'openapi' | 'asyncapi';
 
+function isRemoteUrl(path: string): boolean {
+  return path.startsWith('http://') || path.startsWith('https://');
+}
+
+function sanitizeLocalPath(path: string): string | null {
+  // Reject absolute paths and path traversal sequences
+  if (path.startsWith('/') || /(?:^|[\\/])\.\.(?:[\\/]|$)/.test(path)) return null;
+  return path;
+}
+
 function getSpecifications(config: CompassConfig): Array<{ type: SpecType; path: string; name?: string }> {
   if (!config.links) return [];
   const specs: Array<{ type: SpecType; path: string; name?: string }> = [];
   for (const link of config.links) {
     if (!link.name) continue;
+    // Skip remote URLs — EventCatalog expects local file paths for specifications.
+    // Remote links are already rendered in the markdown body.
+    if (isRemoteUrl(link.url)) continue;
+    const safePath = sanitizeLocalPath(link.url);
+    if (!safePath) continue;
     const nameLower = link.name.toLowerCase();
     if (nameLower.includes('openapi') || nameLower.includes('swagger')) {
-      const safeUrl = sanitizeUrl(link.url);
-      if (safeUrl) {
-        specs.push({ type: 'openapi', path: safeUrl, name: link.name });
-      }
+      specs.push({ type: 'openapi', path: safePath, name: link.name });
     } else if (nameLower.includes('asyncapi')) {
-      const safeUrl = sanitizeUrl(link.url);
-      if (safeUrl) {
-        specs.push({ type: 'asyncapi', path: safeUrl, name: link.name });
-      }
+      specs.push({ type: 'asyncapi', path: safePath, name: link.name });
     }
   }
   return specs;

@@ -1,6 +1,6 @@
 import { expect, it, describe, beforeEach, afterEach, vi } from 'vitest';
 import utils from '@eventcatalog/sdk';
-import { fetchComponents, fetchTeamById, resolveValue } from '../compass-api';
+import { fetchComponents, fetchTeamById, fetchScorecardNames, resolveValue } from '../compass-api';
 import plugin from '../index';
 import { join } from 'node:path';
 import fs from 'fs/promises';
@@ -54,15 +54,22 @@ function makeComponent(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function makeTeamResponse(team: { teamId: string; displayName: string } | null) {
+function makeEmptyScorecardsResponse() {
+  return {
+    ok: true,
+    json: async () => ({
+      data: { compass: { scorecards: { nodes: [] } } },
+    }),
+  };
+}
+
+function makeTeamResponse(team: { id: string; displayName: string } | null) {
   return {
     ok: true,
     json: async () => ({
       data: {
         team: {
-          teamById: {
-            team,
-          },
+          teamV2: team,
         },
       },
     }),
@@ -128,8 +135,8 @@ describe('Compass API client', () => {
           makeComponent({
             relationships: {
               nodes: [
-                { type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/dep-1' },
-                { type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/dep-2' },
+                { relationshipType: 'DEPENDS_ON', endNode: { id: 'ari:cloud:compass:test:component/dep-1' } },
+                { relationshipType: 'DEPENDS_ON', endNode: { id: 'ari:cloud:compass:test:component/dep-2' } },
               ],
             },
           }),
@@ -147,7 +154,7 @@ describe('Compass API client', () => {
       mockFetch.mockResolvedValueOnce(
         makeSearchResponse([
           makeComponent({
-            customFields: [{ definition: { name: 'Environment', type: 'text' }, textValue: 'production' }],
+            customFields: [{ definition: { name: 'Environment' }, textValue: 'production' }],
           }),
         ])
       );
@@ -207,13 +214,13 @@ describe('Compass API client', () => {
       delete process.env.MY_COMPASS_EMAIL;
     });
 
-    it('passes typeFilter as query variable', async () => {
+    it('does not pass typeFilter as query variable (filtered client-side)', async () => {
       mockFetch.mockResolvedValueOnce(makeSearchResponse([]));
 
       await fetchComponents({ ...apiConfig, typeFilter: ['SERVICE', 'APPLICATION'] });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.variables.types).toEqual(['SERVICE', 'APPLICATION']);
+      expect(body.variables.types).toBeUndefined();
     });
 
     it('throws on 401 unauthorized', async () => {
@@ -285,6 +292,9 @@ describe('Compass API client', () => {
     });
 
     it('fetches components via API and writes services to catalog', async () => {
+      // fetchScorecardNames call
+      mockFetch.mockResolvedValueOnce(makeEmptyScorecardsResponse());
+      // fetchComponents call
       mockFetch.mockResolvedValueOnce(
         makeSearchResponse([
           makeComponent({
@@ -314,13 +324,16 @@ describe('Compass API client', () => {
     });
 
     it('resolves dependencies between API-fetched components', async () => {
+      // fetchScorecardNames call
+      mockFetch.mockResolvedValueOnce(makeEmptyScorecardsResponse());
+      // fetchComponents call
       mockFetch.mockResolvedValueOnce(
         makeSearchResponse([
           makeComponent({
             id: 'ari:cloud:compass:test:component/svc-a',
             name: 'service-a',
             relationships: {
-              nodes: [{ type: 'DEPENDS_ON', nodeId: 'ari:cloud:compass:test:component/svc-b' }],
+              nodes: [{ relationshipType: 'DEPENDS_ON', endNode: { id: 'ari:cloud:compass:test:component/svc-b' } }],
             },
           }),
           makeComponent({
@@ -338,7 +351,7 @@ describe('Compass API client', () => {
       const { getService } = utils(catalogDir);
       const serviceA = await getService('service-a');
       expect(serviceA).toBeDefined();
-      expect(serviceA.markdown).toContain('[service-b](/docs/services/service-b)');
+      expect(serviceA.markdown).toContain('[service-b](../../service-b/)');
 
       const serviceB = await getService('service-b');
       expect(serviceB).toBeDefined();
@@ -346,6 +359,9 @@ describe('Compass API client', () => {
     });
 
     it('creates domain and associates API-fetched services', async () => {
+      // fetchScorecardNames call
+      mockFetch.mockResolvedValueOnce(makeEmptyScorecardsResponse());
+      // fetchComponents call
       mockFetch.mockResolvedValueOnce(makeSearchResponse([makeComponent({ name: 'domain-api-service' })]));
 
       await plugin(eventCatalogConfig, {
@@ -366,7 +382,7 @@ describe('Compass API client', () => {
 
   describe('fetchTeamById', () => {
     it('fetches team display name by ID', async () => {
-      mockFetch.mockResolvedValueOnce(makeTeamResponse({ teamId: 'team-uuid-123', displayName: 'Platform Team' }));
+      mockFetch.mockResolvedValueOnce(makeTeamResponse({ id: 'team-uuid-123', displayName: 'Platform Team' }));
 
       const team = await fetchTeamById(apiConfig, 'team-uuid-123');
       expect(team).toEqual({ id: 'team-uuid-123', displayName: 'Platform Team' });
@@ -398,13 +414,13 @@ describe('Compass API client', () => {
   });
 
   describe('scorecard mapping', () => {
-    it('maps scorecard scores from API response', async () => {
+    it('extracts short ID from ARI-style scorecardId', async () => {
       mockFetch.mockResolvedValueOnce(
         makeSearchResponse([
           makeComponent({
             scorecardScores: [
-              { scorecard: { name: 'Health' }, score: 85, maxScore: 100 },
-              { scorecard: { name: 'Security' }, score: 60, maxScore: 100 },
+              { scorecardId: 'ari:cloud:compass:test:scorecard/abc/uuid-health', totalScore: 85, maxTotalScore: 100 },
+              { scorecardId: 'ari:cloud:compass:test:scorecard/abc/uuid-security', totalScore: 60, maxTotalScore: 100 },
             ],
           }),
         ])
@@ -412,8 +428,36 @@ describe('Compass API client', () => {
 
       const components = await fetchComponents(apiConfig);
       expect(components[0].scorecards).toHaveLength(2);
+      expect(components[0].scorecards?.[0]).toEqual({ name: 'uuid-health', score: 85, maxScore: 100 });
+      expect(components[0].scorecards?.[1]).toEqual({ name: 'uuid-security', score: 60, maxScore: 100 });
+    });
+
+    it('uses scorecard name map when provided', async () => {
+      const scorecardId = 'ari:cloud:compass:test:scorecard/abc/sc-uuid-1';
+      mockFetch.mockResolvedValueOnce(
+        makeSearchResponse([
+          makeComponent({
+            scorecardScores: [{ scorecardId, totalScore: 90, maxTotalScore: 100 }],
+          }),
+        ])
+      );
+
+      const nameMap = new Map([[scorecardId, 'Health Check']]);
+      const components = await fetchComponents(apiConfig, nameMap);
+      expect(components[0].scorecards?.[0]).toEqual({ name: 'Health Check', score: 90, maxScore: 100 });
+    });
+
+    it('keeps plain scorecardId as-is when not an ARI', async () => {
+      mockFetch.mockResolvedValueOnce(
+        makeSearchResponse([
+          makeComponent({
+            scorecardScores: [{ scorecardId: 'Health', totalScore: 85, maxTotalScore: 100 }],
+          }),
+        ])
+      );
+
+      const components = await fetchComponents(apiConfig);
       expect(components[0].scorecards?.[0]).toEqual({ name: 'Health', score: 85, maxScore: 100 });
-      expect(components[0].scorecards?.[1]).toEqual({ name: 'Security', score: 60, maxScore: 100 });
     });
 
     it('handles components with no scorecard scores', async () => {
@@ -421,6 +465,43 @@ describe('Compass API client', () => {
 
       const components = await fetchComponents(apiConfig);
       expect(components[0].scorecards).toBeUndefined();
+    });
+  });
+
+  describe('fetchScorecardNames', () => {
+    it('fetches scorecard names and returns a map', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            compass: {
+              scorecards: {
+                nodes: [
+                  { id: 'ari:cloud:compass:test:scorecard/abc/sc-1', name: 'Health Check' },
+                  { id: 'ari:cloud:compass:test:scorecard/abc/sc-2', name: 'Security' },
+                ],
+              },
+            },
+          },
+        }),
+      });
+
+      const names = await fetchScorecardNames(apiConfig);
+      expect(names.size).toBe(2);
+      expect(names.get('ari:cloud:compass:test:scorecard/abc/sc-1')).toBe('Health Check');
+      expect(names.get('ari:cloud:compass:test:scorecard/abc/sc-2')).toBe('Security');
+    });
+
+    it('returns empty map on HTTP error', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+      const names = await fetchScorecardNames(apiConfig);
+      expect(names.size).toBe(0);
+    });
+
+    it('returns empty map on network error', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('network error'));
+      const names = await fetchScorecardNames(apiConfig);
+      expect(names.size).toBe(0);
     });
   });
 
@@ -437,7 +518,9 @@ describe('Compass API client', () => {
     });
 
     it('enriches team name from Compass API in API mode', async () => {
-      // First call: fetchComponents
+      // First call: fetchScorecardNames
+      mockFetch.mockResolvedValueOnce(makeEmptyScorecardsResponse());
+      // Second call: fetchComponents
       mockFetch.mockResolvedValueOnce(
         makeSearchResponse([
           makeComponent({
@@ -446,8 +529,8 @@ describe('Compass API client', () => {
           }),
         ])
       );
-      // Second call: fetchTeamById
-      mockFetch.mockResolvedValueOnce(makeTeamResponse({ teamId: 'team-uuid-456', displayName: 'Engineering Squad' }));
+      // Third call: fetchTeamById
+      mockFetch.mockResolvedValueOnce(makeTeamResponse({ id: 'team-uuid-456', displayName: 'Engineering Squad' }));
 
       await plugin(eventCatalogConfig, {
         api: apiConfig,
@@ -460,8 +543,10 @@ describe('Compass API client', () => {
       expect(team.name).toBe('Engineering Squad');
     });
 
-    it('falls back to UUID when team fetch fails', async () => {
-      // First call: fetchComponents
+    it('skips team creation when team fetch fails in API mode', async () => {
+      // First call: fetchScorecardNames
+      mockFetch.mockResolvedValueOnce(makeEmptyScorecardsResponse());
+      // Second call: fetchComponents
       mockFetch.mockResolvedValueOnce(
         makeSearchResponse([
           makeComponent({
@@ -470,7 +555,7 @@ describe('Compass API client', () => {
           }),
         ])
       );
-      // Second call: fetchTeamById fails
+      // Third call: fetchTeamById fails
       mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
 
       await plugin(eventCatalogConfig, {
@@ -480,8 +565,7 @@ describe('Compass API client', () => {
 
       const { getTeam } = utils(catalogDir);
       const team = await getTeam('team-uuid-789');
-      expect(team).toBeDefined();
-      expect(team.name).toBe('team-uuid-789');
+      expect(team).toBeUndefined();
     });
   });
 
@@ -498,11 +582,20 @@ describe('Compass API client', () => {
     });
 
     it('creates scorecard badges from API-fetched components', async () => {
+      const scorecardAri = 'ari:cloud:compass:test:scorecard/abc/sc-health';
+      // First call: fetchScorecardNames
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: { compass: { scorecards: { nodes: [{ id: scorecardAri, name: 'Health' }] } } },
+        }),
+      });
+      // Second call: fetchComponents
       mockFetch.mockResolvedValueOnce(
         makeSearchResponse([
           makeComponent({
             name: 'scorecard-api-service',
-            scorecardScores: [{ scorecard: { name: 'Health' }, score: 90, maxScore: 100 }],
+            scorecardScores: [{ scorecardId: scorecardAri, totalScore: 90, maxTotalScore: 100 }],
           }),
         ])
       );
