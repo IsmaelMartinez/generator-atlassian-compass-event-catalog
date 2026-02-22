@@ -491,10 +491,12 @@ export async function fetchComponents(config: ApiConfig, scorecardNames?: Map<st
   return components;
 }
 
+// Use separate $id/$ownerId variables rather than a typed $input variable because
+// CompassUpdateComponentInput is not exposed as a named type in the schema introspection.
 const UPDATE_COMPONENT_MUTATION = `
-  mutation updateComponent($input: CompassUpdateComponentInput!) {
+  mutation updateComponent($id: ID!, $ownerId: ID!) {
     compass {
-      updateComponent(input: $input) {
+      updateComponent(input: { id: $id, ownerId: $ownerId }) {
         success
         errors { message }
         componentDetails { id ownerId }
@@ -535,7 +537,7 @@ export async function updateComponentOwner(
     },
     body: JSON.stringify({
       query: UPDATE_COMPONENT_MUTATION,
-      variables: { input: { id: componentId, ownerId: ownerAri } },
+      variables: { id: componentId, ownerId: ownerAri },
     }),
   });
 

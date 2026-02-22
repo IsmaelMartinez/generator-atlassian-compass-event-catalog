@@ -641,7 +641,8 @@ describe('updateComponentOwner', () => {
     const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string);
     expect(body.variables).toEqual({
-      input: { id: 'comp-ari', ownerId: 'ari:cloud:identity::team/team-uuid' },
+      id: 'comp-ari',
+      ownerId: 'ari:cloud:identity::team/team-uuid',
     });
   });
 
