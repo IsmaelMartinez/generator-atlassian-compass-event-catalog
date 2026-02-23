@@ -175,6 +175,19 @@ The Atlassian organisation ID is found in the URL when logged in at [admin.atlas
 
 ### Usage
 
+**Step 0 — print mappings** (show component → team assignments, no API tokens for Teams required):
+
+```bash
+COMPASS_API_TOKEN=xxx COMPASS_EMAIL=xxx COMPASS_CLOUD_ID=xxx \
+  COMPASS_BASE_URL=https://your-org.atlassian.net \
+  npm run seed-compass-teams -- \
+  --tfvars /path/to/core-provisioning/layers/250provisioning/groups/envs/pr.tfvars \
+  --mappings team-mappings.json \
+  --print-mappings
+```
+
+This fetches all Compass components and prints each component alongside its intended team name. No writes are made, and `ATLASSIAN_TEAMS_TOKEN` / `ATLASSIAN_ORG_ID` are not required. Useful when team creation is handled manually (e.g. Atlassian Access is not configured).
+
 **Step 1 — dry run** (preview changes, no writes):
 
 ```bash

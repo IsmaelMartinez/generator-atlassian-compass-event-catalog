@@ -11,7 +11,7 @@ function requireEnv(name: string): string {
   return value;
 }
 
-function parseArgs(): { tfvarsPath: string; mappingsPath: string; dryRun: boolean } {
+function parseArgs(): { tfvarsPath: string; mappingsPath: string; dryRun: boolean; printMappings: boolean } {
   const args = process.argv.slice(2);
   const get = (flag: string): string | undefined => {
     const idx = args.indexOf(flag);
@@ -20,29 +20,23 @@ function parseArgs(): { tfvarsPath: string; mappingsPath: string; dryRun: boolea
   const tfvarsPath = get('--tfvars');
   const mappingsPath = get('--mappings');
   const dryRun = args.includes('--dry-run');
+  const printMappings = args.includes('--print-mappings');
 
   if (!tfvarsPath) throw new Error('Missing required argument: --tfvars <path>');
   if (!mappingsPath) throw new Error('Missing required argument: --mappings <path>');
 
-  return { tfvarsPath, mappingsPath, dryRun };
+  return { tfvarsPath, mappingsPath, dryRun, printMappings };
 }
 
 async function main(): Promise<void> {
-  const { tfvarsPath, mappingsPath, dryRun } = parseArgs();
+  const { tfvarsPath, mappingsPath, dryRun, printMappings } = parseArgs();
 
   const compassToken = requireEnv('COMPASS_API_TOKEN');
-  const teamsToken = requireEnv('ATLASSIAN_TEAMS_TOKEN');
   const email = requireEnv('COMPASS_EMAIL');
   const cloudId = requireEnv('COMPASS_CLOUD_ID');
-  const orgId = requireEnv('ATLASSIAN_ORG_ID');
   const baseUrl = requireEnv('COMPASS_BASE_URL');
 
-  const directoryId = process.env['ATLASSIAN_DIRECTORY_ID'];
-
   const apiConfig: ApiConfig = { cloudId, apiToken: compassToken, email, baseUrl };
-  const teamsConfig: TeamsApiConfig = { baseUrl, orgId, apiToken: teamsToken, email, siteId: cloudId, directoryId };
-
-  if (dryRun) console.log(chalk.yellow('[DRY RUN] No changes will be made.\n'));
 
   // 1. Parse team names from tfvars
   const tfvarsContent = fs.readFileSync(tfvarsPath, 'utf-8');
@@ -51,6 +45,35 @@ async function main(): Promise<void> {
 
   // 2. Parse team->component mappings
   const mappings: Record<string, string[]> = JSON.parse(fs.readFileSync(mappingsPath, 'utf-8'));
+
+  // --print-mappings: skip all team API calls, just show component -> team mapping
+  if (printMappings) {
+    console.log(chalk.yellow('\n[PRINT MAPPINGS] No changes will be made. Showing desired component -> team assignments:\n'));
+    console.log(chalk.green('\nFetching Compass components...'));
+    const components = await fetchComponents(apiConfig);
+    const componentAriByName = new Map(components.filter((c) => c.id && c.name).map((c) => [c.name, c.id as string]));
+    console.log(chalk.green(`Fetched ${components.length} components\n`));
+
+    for (const [teamName, componentNames] of Object.entries(mappings)) {
+      for (const componentName of componentNames) {
+        const componentAri = componentAriByName.get(componentName);
+        if (componentAri) {
+          console.log(chalk.cyan(`  "${componentName}" -> team: ${teamName}`));
+        } else {
+          console.warn(chalk.yellow(`  "${componentName}" -> team: ${teamName}  [component not found in Compass]`));
+        }
+      }
+    }
+    return;
+  }
+
+  const teamsToken = requireEnv('ATLASSIAN_TEAMS_TOKEN');
+  const orgId = requireEnv('ATLASSIAN_ORG_ID');
+  const directoryId = process.env['ATLASSIAN_DIRECTORY_ID'];
+
+  const teamsConfig: TeamsApiConfig = { baseUrl, orgId, apiToken: teamsToken, email, siteId: cloudId, directoryId };
+
+  if (dryRun) console.log(chalk.yellow('[DRY RUN] No changes will be made.\n'));
 
   // 3. Ensure each team exists in Atlassian
   const teamAriByName = new Map<string, string>();
