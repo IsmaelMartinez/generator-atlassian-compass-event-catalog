@@ -651,6 +651,8 @@ describe('Atlassian Compass generator tests', () => {
       expect(service.markdown).toContain('## Dependencies');
       expect(service.markdown).toContain('[my-application](../my-application/)');
       expect(service.markdown).toContain('[my-library](../my-library/)');
+      // sends should be populated for NodeGraph visualisation
+      expect(service.sends).toEqual([{ id: 'my-application' }, { id: 'my-library' }]);
     });
 
     it('resolves partial dependencies when only some targets are processed', async () => {
@@ -682,6 +684,8 @@ describe('Atlassian Compass generator tests', () => {
       expect(service).toBeDefined();
       expect(service.markdown).toContain('## Dependencies');
       expect(service.markdown).toContain('No known dependencies.');
+      // sends should not be set when there are no dependencies
+      expect(service.sends).toBeUndefined();
     });
 
     it('handles missing dependency targets gracefully without crashing', async () => {
@@ -1132,96 +1136,6 @@ describe('Atlassian Compass generator tests', () => {
       const service = await getService('my-library');
       expect(service).toBeDefined();
       expect(service.specifications).toBeUndefined();
-    });
-  });
-
-  describe('scorecard-to-badge mapping', () => {
-    it('creates badges from scorecard data with high score (green)', async () => {
-      const { loadService } = await import('../service');
-      const config = {
-        name: 'scorecard-service',
-        typeId: 'SERVICE' as const,
-        scorecards: [{ name: 'Health', score: 85, maxScore: 100 }],
-      };
-
-      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'scorecard-service');
-      expect(service.badges).toContainEqual({
-        content: 'Health: 85%',
-        backgroundColor: '#22c55e',
-        textColor: '#fff',
-      });
-    });
-
-    it('creates badges from scorecard data with medium score (amber)', async () => {
-      const { loadService } = await import('../service');
-      const config = {
-        name: 'scorecard-service',
-        typeId: 'SERVICE' as const,
-        scorecards: [{ name: 'Security', score: 60, maxScore: 100 }],
-      };
-
-      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'scorecard-service');
-      expect(service.badges).toContainEqual({
-        content: 'Security: 60%',
-        backgroundColor: '#f59e0b',
-        textColor: '#fff',
-      });
-    });
-
-    it('creates badges from scorecard data with low score (red)', async () => {
-      const { loadService } = await import('../service');
-      const config = {
-        name: 'scorecard-service',
-        typeId: 'SERVICE' as const,
-        scorecards: [{ name: 'Readiness', score: 20, maxScore: 100 }],
-      };
-
-      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'scorecard-service');
-      expect(service.badges).toContainEqual({
-        content: 'Readiness: 20%',
-        backgroundColor: '#ef4444',
-        textColor: '#fff',
-      });
-    });
-
-    it('creates multiple scorecard badges', async () => {
-      const { loadService } = await import('../service');
-      const config = {
-        name: 'multi-scorecard-service',
-        typeId: 'SERVICE' as const,
-        scorecards: [
-          { name: 'Health', score: 90, maxScore: 100 },
-          { name: 'Security', score: 40, maxScore: 100 },
-        ],
-      };
-
-      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'multi-scorecard-service');
-      expect(service.badges).toContainEqual({
-        content: 'Health: 90%',
-        backgroundColor: '#22c55e',
-        textColor: '#fff',
-      });
-      expect(service.badges).toContainEqual({
-        content: 'Security: 40%',
-        backgroundColor: '#ef4444',
-        textColor: '#fff',
-      });
-    });
-
-    it('handles maxScore of 0 gracefully', async () => {
-      const { loadService } = await import('../service');
-      const config = {
-        name: 'zero-max-service',
-        typeId: 'SERVICE' as const,
-        scorecards: [{ name: 'Empty', score: 0, maxScore: 0 }],
-      };
-
-      const service = loadService(config, 'https://compass.atlassian.com', '0.0.0', 'zero-max-service');
-      expect(service.badges).toContainEqual({
-        content: 'Empty: 0%',
-        backgroundColor: '#ef4444',
-        textColor: '#fff',
-      });
     });
   });
 

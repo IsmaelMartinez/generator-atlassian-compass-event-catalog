@@ -46,9 +46,9 @@ The generator produces services and domains, but EventCatalog's core concept is 
 
 The generator rewrites everything on each run. For large catalogs (100+ components), an incremental mode that only updates services whose Compass config has changed (based on hash or timestamp) would improve performance and reduce unnecessary git diffs.
 
-### 11. Component relationship visualisation
+### 11. Component relationship visualisation — done
 
-The generator resolves `DEPENDS_ON` relationships and writes them into markdown. A dedicated dependency graph page using EventCatalog's visualisation capabilities would give a bird's-eye view of service interdependencies pulled from Compass.
+Wired `DEPENDS_ON` relationships into the SDK's `sends` property so `<NodeGraph />` renders the dependency graph. Scorecards hidden from badge output (too noisy for static catalog content).
 
 ### 12. Multi-site support
 

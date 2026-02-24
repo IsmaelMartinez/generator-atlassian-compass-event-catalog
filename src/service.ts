@@ -80,25 +80,6 @@ function buildBadges(config: CompassConfig): Badge[] {
     }
   }
 
-  if (config.scorecards) {
-    for (const sc of config.scorecards) {
-      const pct = sc.maxScore > 0 ? Math.round((sc.score / sc.maxScore) * 100) : 0;
-      let backgroundColor: string;
-      if (pct >= 80) {
-        backgroundColor = '#22c55e'; // green
-      } else if (pct >= 50) {
-        backgroundColor = '#f59e0b'; // amber
-      } else {
-        backgroundColor = '#ef4444'; // red
-      }
-      badges.push({
-        content: `${sanitizeMarkdownText(sc.name)}: ${pct}%`,
-        backgroundColor,
-        textColor: '#fff',
-      });
-    }
-  }
-
   return badges;
 }
 
@@ -251,6 +232,10 @@ export function loadService(
 
   if (specifications.length > 0) {
     service.specifications = specifications;
+  }
+
+  if (dependencies && dependencies.length > 0) {
+    service.sends = dependencies.map((dep) => ({ id: dep.id }));
   }
 
   return service;

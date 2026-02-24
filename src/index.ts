@@ -5,7 +5,7 @@ import { loadService, extractTeamId } from './service';
 import Domain from './domain';
 import { GeneratorProps, ResolvedDependency, ServiceIdStrategy } from './types';
 import { GeneratorPropsSchema } from './validation';
-import { fetchComponents, fetchTeamById, fetchScorecardNames } from './compass-api';
+import { fetchComponents, fetchTeamById } from './compass-api';
 import { sanitizeId, sanitizeHtml } from './sanitize';
 
 // Resolve service ID based on strategy
@@ -91,8 +91,7 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   if (options.api) {
     // API mode: fetch components from Compass GraphQL API
     console.log(chalk.green('Fetching components from Compass API...'));
-    const scorecardNames = await fetchScorecardNames(options.api);
-    const components = await fetchComponents(options.api, scorecardNames);
+    const components = await fetchComponents(options.api);
     console.log(chalk.green(`Fetched ${components.length} components from Compass API`));
 
     for (const config of components) {
