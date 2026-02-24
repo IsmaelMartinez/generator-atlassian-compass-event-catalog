@@ -1,5 +1,6 @@
 import { CompassConfig } from './compass';
 import { ApiConfig } from './types';
+import { sanitizeHtml } from './sanitize';
 
 // Type-level extraction from CompassConfig to avoid importing internal enums
 type LinkType = NonNullable<CompassConfig['links']>[number]['type'];
@@ -131,6 +132,8 @@ const SEARCH_COMPONENTS_QUERY = `
   }
 `;
 
+const FETCH_TIMEOUT_MS = 30_000;
+
 export function resolveValue(value: string): string {
   if (value.startsWith('$')) {
     const envVar = value.slice(1);
@@ -145,9 +148,7 @@ function buildAuthHeader(email: string, apiToken: string): string {
   return `Basic ${Buffer.from(`${email}:${apiToken}`).toString('base64')}`;
 }
 
-function sanitizeText(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
+const sanitizeText = sanitizeHtml;
 
 function mapTier(value: unknown): 1 | 2 | 3 | 4 | undefined {
   if (value == null) return undefined;
@@ -307,6 +308,7 @@ export async function fetchTeamById(
       query: GET_TEAM_QUERY,
       variables: { teamId: teamAri, siteId: config.cloudId },
     }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -386,6 +388,7 @@ export async function fetchScorecardNames(
         query: GET_SCORECARDS_QUERY,
         variables: { cloudId: config.cloudId },
       }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -445,6 +448,7 @@ export async function fetchComponents(config: ApiConfig, scorecardNames?: Map<st
         query: SEARCH_COMPONENTS_QUERY,
         variables,
       }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -489,4 +493,69 @@ export async function fetchComponents(config: ApiConfig, scorecardNames?: Map<st
   }
 
   return components;
+}
+
+const UPDATE_COMPONENT_MUTATION = `
+  mutation updateComponent($id: ID!, $ownerId: ID!) {
+    compass {
+      updateComponent(input: { id: $id, ownerId: $ownerId }) {
+        success
+        errors { message }
+        componentDetails { id ownerId }
+      }
+    }
+  }
+`;
+
+type UpdateComponentResponse = {
+  data?: {
+    compass: {
+      updateComponent: {
+        success: boolean;
+        errors: Array<{ message: string }> | null;
+        componentDetails?: { id: string; ownerId: string | null };
+      };
+    };
+  };
+  errors?: Array<{ message: string }>;
+};
+
+export async function updateComponentOwner(
+  config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl'>,
+  componentId: string,
+  ownerAri: string
+): Promise<void> {
+  const resolvedToken = resolveValue(config.apiToken);
+  const resolvedEmail = resolveValue(config.email);
+  const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
+  const authHeader = buildAuthHeader(resolvedEmail, resolvedToken);
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authHeader,
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      query: UPDATE_COMPONENT_MUTATION,
+      variables: { id: componentId, ownerId: ownerAri },
+    }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Compass updateComponent request failed with status ${response.status}`);
+  }
+
+  const result = (await response.json()) as UpdateComponentResponse;
+
+  if (result.errors && result.errors.length > 0) {
+    throw new Error(result.errors[0].message);
+  }
+
+  const payload = result.data?.compass?.updateComponent;
+  if (payload?.errors && payload.errors.length > 0) {
+    throw new Error(`Compass update component error: ${payload.errors[0].message}`);
+  }
 }
