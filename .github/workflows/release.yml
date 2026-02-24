@@ -15,10 +15,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Use Node.js 20.x
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
+      - uses: pnpm/action-setup@v4
       - name: Installation
         run: pnpm install
       - name: Build
