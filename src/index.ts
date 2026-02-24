@@ -6,16 +6,7 @@ import Domain from './domain';
 import { GeneratorProps, ResolvedDependency, ServiceIdStrategy } from './types';
 import { GeneratorPropsSchema } from './validation';
 import { fetchComponents, fetchTeamById, fetchScorecardNames } from './compass-api';
-
-// Sanitize IDs to prevent path traversal from untrusted sources
-function sanitizeId(id: string): string {
-  return id.replace(/[^a-zA-Z0-9-_]/g, '-');
-}
-
-// Sanitize text to prevent HTML/markdown injection from untrusted API data
-function sanitizeText(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c);
-}
+import { sanitizeId, sanitizeHtml } from './sanitize';
 
 // Resolve service ID based on strategy
 function resolveServiceId(config: CompassConfig, strategy: ServiceIdStrategy | undefined, fileId?: string): string {
@@ -207,7 +198,7 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
               try {
                 const teamData = await fetchTeamById(options.api, rawTeamId);
                 if (teamData?.displayName) {
-                  teamName = sanitizeText(teamData.displayName);
+                  teamName = sanitizeHtml(teamData.displayName);
                 } else {
                   console.warn(chalk.yellow(` - Could not resolve team name for ${rawTeamId}, skipping team creation`));
                 }
