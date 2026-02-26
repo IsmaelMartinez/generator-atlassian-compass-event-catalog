@@ -338,7 +338,7 @@ describe('Compass API client', () => {
       const { getService } = utils(catalogDir);
       const serviceA = await getService('service-a');
       expect(serviceA).toBeDefined();
-      expect(serviceA.markdown).toContain('[service-b](../service-b/)');
+      expect(serviceA.markdown).toContain('[service-b](../../service-b/)');
 
       const serviceB = await getService('service-b');
       expect(serviceB).toBeDefined();

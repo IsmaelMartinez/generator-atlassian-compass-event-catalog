@@ -649,8 +649,8 @@ describe('Atlassian Compass generator tests', () => {
       expect(service).toBeDefined();
       // my-service depends on my-application and my-library
       expect(service.markdown).toContain('## Dependencies');
-      expect(service.markdown).toContain('[my-application](../my-application/)');
-      expect(service.markdown).toContain('[my-library](../my-library/)');
+      expect(service.markdown).toContain('[my-application](../../my-application/)');
+      expect(service.markdown).toContain('[my-library](../../my-library/)');
       // sends should be populated for NodeGraph visualisation
       expect(service.sends).toEqual([{ id: 'my-application' }, { id: 'my-library' }]);
     });
@@ -666,7 +666,7 @@ describe('Atlassian Compass generator tests', () => {
 
       const service = await getService('my-service');
       expect(service).toBeDefined();
-      expect(service.markdown).toContain('[my-application](../my-application/)');
+      expect(service.markdown).toContain('[my-application](../../my-application/)');
       // my-library was not processed, so it should not appear as a resolved dependency link
       expect(service.markdown).not.toContain('[my-library]');
     });
@@ -703,7 +703,7 @@ describe('Atlassian Compass generator tests', () => {
       const service = await getService('my-other-component');
       expect(service).toBeDefined();
       // Should resolve the one that exists
-      expect(service.markdown).toContain('[my-application](../my-application/)');
+      expect(service.markdown).toContain('[my-application](../../my-application/)');
       // Should not crash due to the non-existent dependency
     });
 
@@ -722,8 +722,8 @@ describe('Atlassian Compass generator tests', () => {
       const service = await getService('custom-service');
       expect(service).toBeDefined();
       // Dependencies should use custom IDs
-      expect(service.markdown).toContain('[my-application](../custom-app/)');
-      expect(service.markdown).toContain('[my-library](../custom-lib/)');
+      expect(service.markdown).toContain('[my-application](../../custom-app/)');
+      expect(service.markdown).toContain('[my-library](../../custom-lib/)');
     });
 
     it('includes resolved dependencies in service markdown within a domain', async () => {
@@ -750,8 +750,8 @@ describe('Atlassian Compass generator tests', () => {
       const service = await getService('my-service');
       expect(service).toBeDefined();
       expect(service.markdown).toContain('## Dependencies');
-      expect(service.markdown).toContain('[my-application](../my-application/)');
-      expect(service.markdown).toContain('[my-library](../my-library/)');
+      expect(service.markdown).toContain('[my-application](../../my-application/)');
+      expect(service.markdown).toContain('[my-library](../../my-library/)');
     });
   });
 
