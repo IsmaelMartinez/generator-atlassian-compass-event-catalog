@@ -37,6 +37,7 @@ export type GeneratorProps = {
   format?: 'md' | 'mdx';
   serviceIdStrategy?: ServiceIdStrategy;
   dryRun?: boolean;
+  defaultVersion?: string;
 };
 
 export type DomainOption = {

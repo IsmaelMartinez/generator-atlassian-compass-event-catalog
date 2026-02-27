@@ -116,7 +116,7 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
       if (config.id) {
         serviceMap.set(config.id, { serviceId, name: config.name });
       }
-      processableEntries.push({ config, serviceId, version: '0.0.0' });
+      processableEntries.push({ config, serviceId, version: options.defaultVersion || '0.0.0' });
     }
   } else if (options.services) {
     // YAML mode: read local files (existing behavior)
@@ -141,7 +141,7 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
         if (compassConfig.id) {
           serviceMap.set(compassConfig.id, { serviceId, name: compassConfig.name });
         }
-        processableEntries.push({ config: compassConfig, serviceId, version: file.version || '0.0.0' });
+        processableEntries.push({ config: compassConfig, serviceId, version: file.version || options.defaultVersion || '0.0.0' });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(chalk.red(`\n✗ Failed to load ${file.path}: ${errorMessage}`));
