@@ -133,7 +133,7 @@ export function buildStructuredLinks(
   for (const link of config.links ?? []) {
     const safeUrl = sanitizeUrl(link.url);
     if (!safeUrl) continue;
-    const title = link.name || new URL(safeUrl).hostname;
+    const title = sanitizeHtml(link.name || new URL(safeUrl).hostname);
     links.push({
       url: safeUrl,
       title,
@@ -157,14 +157,14 @@ function buildCustomFieldsTable(config: CompassConfig): string {
   if (!config.customFields || config.customFields.length === 0) return '';
 
   const rows = config.customFields.map((field) => {
-    const safeName = sanitizeMarkdownText(toTitleCase(field.name)).replace(/\|/g, '\\|');
+    const safeName = sanitizeMarkdownText(toTitleCase(field.name)).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
     // js-yaml parses unquoted true/false as native booleans
     const isBoolean = field.type === 'boolean' || typeof (field.value as unknown) === 'boolean';
     const safeValue = isBoolean
       ? (field.value as unknown) === true || field.value === 'true'
         ? '✅'
         : '❌'
-      : sanitizeMarkdownText(String(field.value)).replace(/\|/g, '\\|');
+      : sanitizeMarkdownText(String(field.value)).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
     return `| ${safeName} | ${safeValue} |`;
   });
 
@@ -194,35 +194,30 @@ function getOwners(config: CompassConfig): string[] {
 
 export const defaultMarkdown = (
   config: CompassConfig,
-  compassComponentUrl?: string,
-  compassTeamUrl?: string,
+  structuredLinks: StructuredLink[],
   dependencies?: ResolvedDependency[]
 ) => {
-  const safeComponentUrl = compassComponentUrl ? sanitizeUrl(compassComponentUrl) : '';
-  const safeTeamUrl = compassTeamUrl ? sanitizeUrl(compassTeamUrl) : '';
-
-  // Bucket user links by category label
+  // Bucket structured links by type label
+  const compassLines: string[] = [];
   const buckets = new Map<string, string[]>(LINK_CATEGORIES.map((c) => [c.label, []]));
 
-  for (const link of config.links ?? []) {
-    const safeUrl = sanitizeUrl(link.url);
-    if (!safeUrl) continue;
-    const label = link.name || new URL(safeUrl).hostname;
-    const safeName = sanitizeMarkdownText(label);
-    const icon = UrlTypeToIcon[link.type] || '🔗';
-    const bullet = `* ${icon} [${safeName}](${safeUrl})`;
+  for (const link of structuredLinks) {
+    // Title is already HTML-sanitized by buildStructuredLinks; only escape markdown brackets
+    const safeName = link.title.replace(/[[\]()]/g, (char) => `\\${char}`);
+    const bullet = `* ${link.icon} [${safeName}](${link.url})`;
 
-    const category = LINK_CATEGORIES.find((c) => c.types.includes(link.type));
-    const bucketKey = category?.label ?? 'Other';
-    buckets.get(bucketKey)?.push(bullet);
+    if (link.type === 'Compass') {
+      compassLines.push(bullet);
+    } else {
+      const category = LINK_CATEGORIES.find((c) => c.types.includes(link.rawType));
+      const bucketKey = category?.label ?? 'Other';
+      buckets.get(bucketKey)?.push(bullet);
+    }
   }
 
   // Build subsection blocks. "Compass" is always first.
   const subsections: string[] = [];
 
-  const compassLines: string[] = [];
-  if (safeComponentUrl) compassLines.push(`* 🧭 [Compass Component](${safeComponentUrl})`);
-  if (safeTeamUrl) compassLines.push(`* 🪂 [Compass Team](${safeTeamUrl})`);
   if (compassLines.length > 0) {
     subsections.push(`### Compass\n\n${compassLines.join('\n')}`);
   }
@@ -322,7 +317,7 @@ export function loadService(
 
   const markdown = customMarkdownTemplate
     ? customMarkdownTemplate(config, dependencies || [], structuredLinks)
-    : defaultMarkdown(config, componentUrl, teamUrl, dependencies);
+    : defaultMarkdown(config, structuredLinks, dependencies);
   const badges = buildBadges(config);
   const repositoryUrl = getRepositoryUrl(config);
   const owners = getOwners(config);
