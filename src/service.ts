@@ -1,5 +1,5 @@
 import { CompassConfig } from './compass';
-import { Service, Badge, ResolvedDependency, MarkdownTemplateFn } from './types';
+import { Service, Badge, ResolvedDependency, MarkdownTemplateFn, StructuredLink } from './types';
 import { sanitizeHtml } from './sanitize';
 
 // Sanitize text for safe markdown/MDX embedding: escape HTML special chars and markdown link syntax
@@ -30,6 +30,16 @@ enum UrlTypeToIcon {
   OTHER_LINK = '⭐',
 }
 
+const UrlTypeToCategory: Record<string, string> = {
+  CHAT_CHANNEL: 'Chat Channel',
+  DOCUMENT: 'Document',
+  DASHBOARD: 'Dashboard',
+  ON_CALL: 'On-Call',
+  PROJECT: 'Project',
+  REPOSITORY: 'Repository',
+  OTHER_LINK: 'Other',
+};
+
 const lifecycleColors: Record<string, { backgroundColor: string; textColor: string }> = {
   Active: { backgroundColor: '#22c55e', textColor: '#fff' },
   'Pre-release': { backgroundColor: '#f59e0b', textColor: '#fff' },
@@ -42,6 +52,26 @@ const tierColors: Record<number, { backgroundColor: string; textColor: string }>
   3: { backgroundColor: '#8b5cf6', textColor: '#fff' },
   4: { backgroundColor: '#a78bfa', textColor: '#fff' },
 };
+
+const typeIdToIcon: Record<string, string> = {
+  APPLICATION: 'app-window',
+  SERVICE: 'server',
+  CAPABILITY: 'puzzle',
+  CLOUD_RESOURCE: 'cloud',
+  DATA_PIPELINE: 'workflow',
+  LIBRARY: 'library',
+  MACHINE_LEARNING_MODEL: 'brain',
+  OTHER: 'box',
+  UI_ELEMENT: 'layout',
+  WEBSITE: 'globe',
+};
+
+const LINK_CATEGORIES: Array<{ label: string; types: string[] }> = [
+  { label: 'Development', types: ['REPOSITORY', 'PROJECT'] },
+  { label: 'Operations', types: ['DASHBOARD', 'ON_CALL', 'CHAT_CHANNEL'] },
+  { label: 'Documentation', types: ['DOCUMENT'] },
+  { label: 'Other', types: ['OTHER_LINK'] },
+];
 
 function buildBadges(config: CompassConfig): Badge[] {
   const badges: Badge[] = [];
@@ -83,6 +113,68 @@ function buildBadges(config: CompassConfig): Badge[] {
   return badges;
 }
 
+export function buildStructuredLinks(
+  config: CompassConfig,
+  compassComponentUrl?: string,
+  compassTeamUrl?: string
+): StructuredLink[] {
+  const links: StructuredLink[] = [];
+
+  const safeComponentUrl = compassComponentUrl ? sanitizeUrl(compassComponentUrl) : '';
+  if (safeComponentUrl) {
+    links.push({ url: safeComponentUrl, title: 'Compass Component', type: 'Compass', icon: '🧭', rawType: 'COMPASS_COMPONENT' });
+  }
+
+  const safeTeamUrl = compassTeamUrl ? sanitizeUrl(compassTeamUrl) : '';
+  if (safeTeamUrl) {
+    links.push({ url: safeTeamUrl, title: 'Compass Team', type: 'Compass', icon: '🪂', rawType: 'COMPASS_TEAM' });
+  }
+
+  for (const link of config.links ?? []) {
+    const safeUrl = sanitizeUrl(link.url);
+    if (!safeUrl) continue;
+    const title = link.name || new URL(safeUrl).hostname;
+    links.push({
+      url: safeUrl,
+      title,
+      type: UrlTypeToCategory[link.type] ?? 'Other',
+      icon: UrlTypeToIcon[link.type] ?? '🔗',
+      rawType: link.type,
+    });
+  }
+
+  return links;
+}
+
+function toTitleCase(text: string): string {
+  return text
+    .split(' ')
+    .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1).toLowerCase() : ''))
+    .join(' ');
+}
+
+function buildCustomFieldsTable(config: CompassConfig): string {
+  if (!config.customFields || config.customFields.length === 0) return '';
+
+  const rows = config.customFields.map((field) => {
+    const safeName = sanitizeMarkdownText(toTitleCase(field.name)).replace(/\|/g, '\\|');
+    // js-yaml parses unquoted true/false as native booleans
+    const isBoolean = field.type === 'boolean' || typeof (field.value as unknown) === 'boolean';
+    const safeValue = isBoolean
+      ? (field.value as unknown) === true || field.value === 'true'
+        ? '✅'
+        : '❌'
+      : sanitizeMarkdownText(String(field.value)).replace(/\|/g, '\\|');
+    return `| ${safeName} | ${safeValue} |`;
+  });
+
+  return `## Custom Fields
+
+| Field Name | Value |
+|---|---|
+${rows.join('\n')}`;
+}
+
 function getRepositoryUrl(config: CompassConfig): string | undefined {
   return config.links?.find((link) => link.type === 'REPOSITORY')?.url;
 }
@@ -109,18 +201,42 @@ export const defaultMarkdown = (
   const safeComponentUrl = compassComponentUrl ? sanitizeUrl(compassComponentUrl) : '';
   const safeTeamUrl = compassTeamUrl ? sanitizeUrl(compassTeamUrl) : '';
 
-  const linkLines = config.links
-    ?.map((link) => {
-      const safeUrl = sanitizeUrl(link.url);
-      if (!safeUrl) return null;
-      // Use link name if available, otherwise derive a label from the URL or link type
-      const label = link.name || new URL(safeUrl).hostname;
-      const safeName = sanitizeMarkdownText(label);
-      const icon = UrlTypeToIcon[link.type] || '🔗';
-      return `* ${icon} [${safeName}](${safeUrl})`;
-    })
-    .filter(Boolean)
-    .join('\n');
+  // Bucket user links by category label
+  const buckets = new Map<string, string[]>(LINK_CATEGORIES.map((c) => [c.label, []]));
+
+  for (const link of config.links ?? []) {
+    const safeUrl = sanitizeUrl(link.url);
+    if (!safeUrl) continue;
+    const label = link.name || new URL(safeUrl).hostname;
+    const safeName = sanitizeMarkdownText(label);
+    const icon = UrlTypeToIcon[link.type] || '🔗';
+    const bullet = `* ${icon} [${safeName}](${safeUrl})`;
+
+    const category = LINK_CATEGORIES.find((c) => c.types.includes(link.type));
+    const bucketKey = category?.label ?? 'Other';
+    buckets.get(bucketKey)?.push(bullet);
+  }
+
+  // Build subsection blocks. "Compass" is always first.
+  const subsections: string[] = [];
+
+  const compassLines: string[] = [];
+  if (safeComponentUrl) compassLines.push(`* 🧭 [Compass Component](${safeComponentUrl})`);
+  if (safeTeamUrl) compassLines.push(`* 🪂 [Compass Team](${safeTeamUrl})`);
+  if (compassLines.length > 0) {
+    subsections.push(`### Compass\n\n${compassLines.join('\n')}`);
+  }
+
+  for (const { label } of LINK_CATEGORIES) {
+    const lines = buckets.get(label);
+    if (lines && lines.length > 0) {
+      subsections.push(`### ${label}\n\n${lines.join('\n')}`);
+    }
+  }
+
+  const linksBlock = subsections.length > 0 ? subsections.join('\n\n') : '';
+
+  const customFieldsSection = buildCustomFieldsTable(config);
 
   const dependencyLines =
     dependencies && dependencies.length > 0
@@ -131,10 +247,8 @@ export const defaultMarkdown = (
 
 ## Links
 
-* 🧭 [Compass Component](${safeComponentUrl})
-* 🪂 [Compass Team](${safeTeamUrl})
-${linkLines}
-
+${linksBlock}
+${customFieldsSection ? '\n' + customFieldsSection + '\n' : ''}
 ## Dependencies
 
 ${dependencyLines}
@@ -202,9 +316,13 @@ export function loadService(
   dependencies?: ResolvedDependency[],
   customMarkdownTemplate?: MarkdownTemplateFn
 ): Service {
+  const componentUrl = getComponentUrl(compassUrl, config);
+  const teamUrl = getTeamUrl(compassUrl, config);
+  const structuredLinks = buildStructuredLinks(config, componentUrl, teamUrl);
+
   const markdown = customMarkdownTemplate
-    ? customMarkdownTemplate(config, dependencies || [])
-    : defaultMarkdown(config, getComponentUrl(compassUrl, config), getTeamUrl(compassUrl, config), dependencies);
+    ? customMarkdownTemplate(config, dependencies || [], structuredLinks)
+    : defaultMarkdown(config, componentUrl, teamUrl, dependencies);
   const badges = buildBadges(config);
   const repositoryUrl = getRepositoryUrl(config);
   const owners = getOwners(config);
@@ -234,8 +352,24 @@ export function loadService(
     service.specifications = specifications;
   }
 
+  if (structuredLinks.length > 0) {
+    service.attachments = structuredLinks.map((link) => ({
+      url: link.url,
+      title: link.title,
+      type: link.type,
+      icon: link.icon,
+    }));
+  }
+
   if (dependencies && dependencies.length > 0) {
     service.sends = dependencies.map((dep) => ({ id: dep.id }));
+  }
+
+  if (config.typeId) {
+    const icon = typeIdToIcon[config.typeId];
+    if (icon) {
+      service.styles = { icon };
+    }
   }
 
   return service;

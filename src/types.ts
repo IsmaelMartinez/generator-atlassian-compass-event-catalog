@@ -15,7 +15,15 @@ export type ApiConfig = {
   typeFilter?: string[];
 };
 
-export type MarkdownTemplateFn = (config: CompassConfig, dependencies: ResolvedDependency[]) => string;
+export type StructuredLink = {
+  url: string;
+  title: string;
+  type: string;
+  icon: string;
+  rawType: string;
+};
+
+export type MarkdownTemplateFn = (config: CompassConfig, dependencies: ResolvedDependency[], links?: StructuredLink[]) => string;
 
 export type ServiceIdStrategyFn = (config: CompassConfig) => string;
 export type ServiceIdStrategy = 'name' | 'compass-id' | ServiceIdStrategyFn;

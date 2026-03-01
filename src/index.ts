@@ -4,6 +4,7 @@ import { loadConfig, CompassConfig } from './compass';
 import { loadService, extractTeamId } from './service';
 import Domain from './domain';
 import { GeneratorProps, ResolvedDependency, ServiceIdStrategy } from './types';
+export type { StructuredLink } from './types';
 import { GeneratorPropsSchema } from './validation';
 import { fetchComponents, fetchTeamById } from './compass-api';
 import { sanitizeId, sanitizeHtml } from './sanitize';
