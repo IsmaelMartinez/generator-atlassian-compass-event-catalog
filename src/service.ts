@@ -309,7 +309,8 @@ export function loadService(
   serviceVersion: string = '0.0.0',
   serviceId: string = config.name,
   dependencies?: ResolvedDependency[],
-  customMarkdownTemplate?: MarkdownTemplateFn
+  customMarkdownTemplate?: MarkdownTemplateFn,
+  badges: boolean = true
 ): Service {
   const componentUrl = getComponentUrl(compassUrl, config);
   const teamUrl = getTeamUrl(compassUrl, config);
@@ -318,7 +319,7 @@ export function loadService(
   const markdown = customMarkdownTemplate
     ? customMarkdownTemplate(config, dependencies || [], structuredLinks)
     : defaultMarkdown(config, structuredLinks, dependencies);
-  const badges = buildBadges(config);
+  const serviceBadges = badges ? buildBadges(config) : [];
   const repositoryUrl = getRepositoryUrl(config);
   const owners = getOwners(config);
   const specifications = getSpecifications(config);
@@ -331,8 +332,8 @@ export function loadService(
     markdown,
   };
 
-  if (badges.length > 0) {
-    service.badges = badges;
+  if (serviceBadges.length > 0) {
+    service.badges = serviceBadges;
   }
 
   if (repositoryUrl) {

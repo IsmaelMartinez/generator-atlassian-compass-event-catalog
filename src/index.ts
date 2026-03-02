@@ -226,7 +226,8 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
         version,
         serviceId,
         dependencies,
-        options.markdownTemplate
+        options.markdownTemplate,
+        options.badges ?? true
       );
 
       if (dryRun) {

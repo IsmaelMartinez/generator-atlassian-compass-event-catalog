@@ -46,6 +46,7 @@ export type GeneratorProps = {
   serviceIdStrategy?: ServiceIdStrategy;
   dryRun?: boolean;
   defaultVersion?: string;
+  badges?: boolean;
 };
 
 export type DomainOption = {
