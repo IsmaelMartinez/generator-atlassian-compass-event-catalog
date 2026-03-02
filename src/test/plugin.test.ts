@@ -14,12 +14,30 @@ let catalogDir: string;
 
 const expectedMarkdown = `## Links
 
+### Compass
+
 * 🧭 [Compass Component](https://compass.atlassian.com/component/00000000-0000-0000-0000-000000000000)
 * 🪂 [Compass Team](https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000)
+
+### Development
+
 * 🚀 [My Jira project](https://www.example.com/projects/myproject)
-* ⭐ [www.example.com](https://www.example.com/resources/)
-* 👀 [Service dashboard](https://www.example.com/dashboards/service-dashboard)
 * 🏡 [Service repository](https://www.example.com/repos/my-service-repo)
+
+### Operations
+
+* 👀 [Service dashboard](https://www.example.com/dashboards/service-dashboard)
+
+### Other
+
+* ⭐ [www.example.com](https://www.example.com/resources/)
+
+## Custom Fields
+
+| Field Name | Value |
+|---|---|
+| Platform | web |
+| Reviewed | ✅ |
 
 ## Dependencies
 
@@ -28,6 +46,25 @@ No known dependencies.
 ## Architecture diagram
 
 <NodeGraph />`;
+
+const expectedAttachments = [
+  {
+    url: 'https://compass.atlassian.com/component/00000000-0000-0000-0000-000000000000',
+    title: 'Compass Component',
+    type: 'Compass',
+    icon: '🧭',
+  },
+  {
+    url: 'https://compass.atlassian.com/people/team/00000000-0000-0000-0000-000000000000',
+    title: 'Compass Team',
+    type: 'Compass',
+    icon: '🪂',
+  },
+  { url: 'https://www.example.com/projects/myproject', title: 'My Jira project', type: 'Project', icon: '🚀' },
+  { url: 'https://www.example.com/resources/', title: 'www.example.com', type: 'Other', icon: '⭐' },
+  { url: 'https://www.example.com/dashboards/service-dashboard', title: 'Service dashboard', type: 'Dashboard', icon: '👀' },
+  { url: 'https://www.example.com/repos/my-service-repo', title: 'Service repository', type: 'Repository', icon: '🏡' },
+];
 
 const expectedBadges = [
   { content: 'SERVICE', backgroundColor: '#6366f1', textColor: '#fff' },
@@ -93,6 +130,8 @@ describe('Atlassian Compass generator tests', () => {
       badges: expectedBadges,
       repository: expectedRepository,
       owners: expectedOwners,
+      attachments: expectedAttachments,
+      styles: { icon: 'server' },
     });
   });
 
@@ -140,6 +179,8 @@ describe('Atlassian Compass generator tests', () => {
       badges: expectedBadges,
       repository: expectedRepository,
       owners: expectedOwners,
+      attachments: expectedAttachments,
+      styles: { icon: 'server' },
     });
   });
 
@@ -187,6 +228,8 @@ describe('Atlassian Compass generator tests', () => {
       badges: expectedBadges,
       repository: expectedRepository,
       owners: expectedOwners,
+      attachments: expectedAttachments,
+      styles: { icon: 'server' },
     });
   });
 
@@ -245,6 +288,8 @@ describe('Atlassian Compass generator tests', () => {
       badges: expectedBadges,
       repository: expectedRepository,
       owners: expectedOwners,
+      attachments: expectedAttachments,
+      styles: { icon: 'server' },
     });
   });
 
@@ -793,6 +838,27 @@ describe('Atlassian Compass generator tests', () => {
       expect(service).toBeDefined();
       expect(service.markdown).toContain('Service: my-service');
       expect(service.markdown).toContain('Depends on: my-application, my-library');
+    });
+
+    it('passes structured links as third parameter to custom markdownTemplate', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        markdownTemplate: (_config, _deps, links) => {
+          const count = links?.length ?? 0;
+          const types = links?.map((l) => l.type).join(', ') ?? '';
+          return `Links: ${count}\nTypes: ${types}`;
+        },
+      });
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+      expect(service.markdown).toContain('Links: 6');
+      expect(service.markdown).toContain('Compass');
+      expect(service.markdown).toContain('Project');
+      expect(service.markdown).toContain('Repository');
     });
 
     it('falls back to defaultMarkdown when markdownTemplate is not provided', async () => {

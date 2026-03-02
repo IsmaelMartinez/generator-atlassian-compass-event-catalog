@@ -53,3 +53,25 @@ Wired `DEPENDS_ON` relationships into the SDK's `sends` property so `<NodeGraph 
 ### 12. Multi-site support
 
 The current `ApiConfig` targets a single Atlassian site. Organisations with multiple Compass instances could benefit from aggregating into a single EventCatalog. Supporting an array of API configs would enable that.
+
+## Presentation Layer Improvements (done)
+
+### 13. Use SDK `attachments` for structured links — done
+
+Populated `service.attachments` from Compass links via `buildStructuredLinks()`. Each link mapped to `{ url, title, type, icon }`. Compass Component and Team URLs included as "Compass" type attachments.
+
+### 14. Categorise links into sections — done
+
+Rewrote `defaultMarkdown()` to group links under `###` subsections: Compass, Development (REPOSITORY, PROJECT), Operations (DASHBOARD, ON_CALL, CHAT_CHANNEL), Documentation (DOCUMENT), Other (OTHER_LINK). Empty sections are omitted.
+
+### 15. Expose structured links to custom markdown templates — done
+
+Added `StructuredLink` type (url, title, type, icon, rawType). Widened `MarkdownTemplateFn` to accept optional third parameter `links?: StructuredLink[]`. Backward compatible — existing two-param templates still work. Type re-exported from package root.
+
+### 16. Surface customFields in the output — done
+
+Added `buildCustomFieldsTable()` that renders customFields as a markdown table between Links and Dependencies. Boolean fields render as checkmark/cross emoji. Pipe characters escaped for table safety.
+
+### 17. Map typeId to styles.icon — done
+
+Added `typeIdToIcon` mapping (APPLICATION=app-window, SERVICE=server, etc.) and set `service.styles.icon` in `loadService()` when typeId is present.
