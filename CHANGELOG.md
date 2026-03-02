@@ -1,5 +1,16 @@
 # @ismaelmartinez/generator-atlassian-compass-event-catalog
 
+## 0.3.0
+
+### Minor Changes
+
+- feat: presentation layer improvements
+  - Populate `service.attachments` from Compass links via structured links (url, title, type, icon)
+  - Categorise links into subsections: Compass, Development, Operations, Documentation, Other
+  - Expose `StructuredLink` type and pass it as optional third parameter to custom markdown templates
+  - Surface `customFields` as a markdown table between Links and Dependencies sections
+  - Map Compass `typeId` to `service.styles.icon` using Lucide icon names
+
 ## 0.2.1
 
 ### Patch Changes
