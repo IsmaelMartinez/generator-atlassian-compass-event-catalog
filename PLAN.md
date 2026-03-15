@@ -34,9 +34,9 @@ Added `updateComponentOwner` GraphQL mutation and 3 tests directly to `compass-a
 
 ## Features
 
-### 8. Team enrichment in service markdown
+### 8. Team enrichment in service markdown — done
 
-The generator fetches team display names via `fetchTeamById()`, but the team data could be richer: team members, team lead, contact channels. Compass exposes this through the Teams API. Richer team data would make EventCatalog service pages more actionable for on-call and ownership discovery.
+Expanded `fetchTeamById()` to fetch description, avatar, and members from Compass Teams v2 API. Enriched data is now passed to the SDK's `writeTeam()`: team summary (from description), avatarUrl (from largeAvatarImageUrl), and members array (with accountId, name, picture).
 
 ### ~~9. Event discovery from AsyncAPI/OpenAPI specs~~ — out of scope
 
