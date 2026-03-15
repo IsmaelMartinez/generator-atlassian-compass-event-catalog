@@ -210,37 +210,26 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
             }
             if (teamData && !dryRun) {
               const teamName = sanitizeHtml(teamData.displayName);
-              const team: {
-                id: string;
-                name: string;
-                markdown: string;
-                summary?: string;
-                avatarUrl?: string;
-                members?: Array<{ id: string; name: string; avatarUrl: string; markdown: string }>;
-              } = {
-                id: teamId,
-                name: teamName,
-                markdown: '',
-              };
+              const members = teamData.members?.length
+                ? teamData.members.map((m) => ({
+                    id: m.accountId,
+                    name: sanitizeHtml(m.name),
+                    avatarUrl: m.picture || '',
+                    markdown: '',
+                  }))
+                : undefined;
 
-              if (teamData.description) {
-                team.summary = sanitizeHtml(teamData.description);
-              }
-
-              if (teamData.largeAvatarImageUrl) {
-                team.avatarUrl = teamData.largeAvatarImageUrl;
-              }
-
-              if (teamData.members && teamData.members.length > 0) {
-                team.members = teamData.members.map((m) => ({
-                  id: m.accountId,
-                  name: sanitizeHtml(m.name),
-                  avatarUrl: m.picture || '',
+              await writeTeam(
+                {
+                  id: teamId,
+                  name: teamName,
                   markdown: '',
-                }));
-              }
-
-              await writeTeam(team, { override: true });
+                  ...(teamData.description && { summary: sanitizeHtml(teamData.description) }),
+                  ...(teamData.largeAvatarImageUrl && { avatarUrl: teamData.largeAvatarImageUrl }),
+                  ...(members && { members }),
+                },
+                { override: true }
+              );
               console.log(chalk.cyan(` - Team ${teamId} (${teamName}) created`));
             } else if (teamData && dryRun) {
               console.log(chalk.yellow(` - [DRY RUN] Would create team ${teamId} (${sanitizeHtml(teamData.displayName)})`));

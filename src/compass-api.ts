@@ -365,25 +365,21 @@ export async function fetchTeamById(
     return null;
   }
 
-  const result_: TeamData = { id: team.id, displayName: team.displayName };
+  const members = team.members?.nodes?.length
+    ? team.members.nodes.map((n) => ({
+        accountId: n.member.accountId,
+        name: n.member.name,
+        picture: n.member.picture || undefined,
+      }))
+    : undefined;
 
-  if (team.description) {
-    result_.description = team.description;
-  }
-
-  if (team.largeAvatarImageUrl) {
-    result_.largeAvatarImageUrl = team.largeAvatarImageUrl;
-  }
-
-  if (team.members?.nodes && team.members.nodes.length > 0) {
-    result_.members = team.members.nodes.map((n) => ({
-      accountId: n.member.accountId,
-      name: n.member.name,
-      picture: n.member.picture || undefined,
-    }));
-  }
-
-  return result_;
+  return {
+    id: team.id,
+    displayName: team.displayName,
+    ...(team.description && { description: team.description }),
+    ...(team.largeAvatarImageUrl && { largeAvatarImageUrl: team.largeAvatarImageUrl }),
+    ...(members && { members }),
+  };
 }
 
 // GraphQL query to fetch all scorecards for the cloud instance
