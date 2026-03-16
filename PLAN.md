@@ -42,9 +42,9 @@ Expanded `fetchTeamById()` to fetch description, avatar, and members from Compas
 
 Handled separately outside this generator.
 
-### 10. Incremental/diff mode
+### 10. Incremental/diff mode — done
 
-The generator rewrites everything on each run. For large catalogs (100+ components), an incremental mode that only updates services whose Compass config has changed (based on hash or timestamp) would improve performance and reduce unnecessary git diffs.
+Added `incremental: true` option to `GeneratorProps`. When enabled, the generator computes a SHA-256 hash of each built `Service` object and stores a manifest (`.compass-hashes.json`) in the project directory. On subsequent runs, services whose hash matches the previous run are skipped. Summary output includes a "Skipped (unchanged)" count.
 
 ### 11. Component relationship visualisation — done
 

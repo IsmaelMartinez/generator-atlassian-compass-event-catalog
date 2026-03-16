@@ -40,6 +40,7 @@ export const GeneratorPropsSchema = z
     format: z.enum(['md', 'mdx']).optional(),
     serviceIdStrategy: ServiceIdStrategySchema.optional(),
     dryRun: z.boolean().optional(),
+    incremental: z.boolean().optional(),
   })
   .refine((data) => data.services || data.api, {
     message: 'Either "services" (YAML mode) or "api" (API mode) must be provided',
