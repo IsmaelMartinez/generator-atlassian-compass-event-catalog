@@ -1,13 +1,39 @@
 import utils from '@eventcatalog/sdk';
 import chalk from 'chalk';
+import { createHash } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { loadConfig, CompassConfig } from './compass';
 import { loadService, extractTeamId } from './service';
 import Domain from './domain';
-import { GeneratorProps, ResolvedDependency, ServiceIdStrategy } from './types';
+import { GeneratorProps, ResolvedDependency, ServiceIdStrategy, Service } from './types';
 export type { StructuredLink } from './types';
 import { GeneratorPropsSchema } from './validation';
 import { fetchComponents, fetchTeamById, TeamData } from './compass-api';
 import { sanitizeId, sanitizeHtml } from './sanitize';
+
+const HASH_MANIFEST_FILE = '.compass-hashes.json';
+
+type HashManifest = Record<string, string>;
+
+async function loadHashManifest(projectDir: string): Promise<HashManifest> {
+  try {
+    const raw = await readFile(join(projectDir, HASH_MANIFEST_FILE), 'utf-8');
+    return JSON.parse(raw) as HashManifest;
+  } catch {
+    return {};
+  }
+}
+
+async function saveHashManifest(projectDir: string, manifest: HashManifest): Promise<void> {
+  await writeFile(join(projectDir, HASH_MANIFEST_FILE), JSON.stringify(manifest, null, 2) + '\n');
+}
+
+function computeServiceHash(service: Service): string {
+  // Stable JSON: sort keys so field ordering doesn't affect the hash
+  const json = JSON.stringify(service, Object.keys(service).sort());
+  return createHash('sha256').update(json).digest('hex');
+}
 
 // Resolve service ID based on strategy
 function resolveServiceId(config: CompassConfig, strategy: ServiceIdStrategy | undefined, fileId?: string): string {
@@ -75,6 +101,10 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
 
   const format = options.format || 'mdx';
   const teamsWritten = new Set<string>();
+  const incremental = options.incremental === true;
+  const hashManifest = incremental ? await loadHashManifest(projectDir) : {};
+  const newHashManifest: HashManifest = {};
+  let skippedCount = 0;
 
   let domain = null;
 
@@ -260,16 +290,27 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
           console.log(chalk.yellow(`   Dependencies: ${dependencies.map((d) => d.name).join(', ')}`));
         }
       } else {
-        const existing = await getService(serviceId);
+        // Incremental mode: skip writing if the service hasn't changed
+        const serviceHash = incremental ? computeServiceHash(compassService) : undefined;
+        if (incremental && serviceHash) {
+          newHashManifest[serviceId] = serviceHash;
+        }
 
-        if (existing && options.overrideExisting !== false) {
-          await writeService(compassService, { override: true, format });
-          console.log(chalk.cyan(` - Service ${compassConfig.name} updated`));
-        } else if (!existing) {
-          await writeService(compassService, { format });
-          console.log(chalk.cyan(` - Service ${compassConfig.name} created`));
+        if (incremental && serviceHash && hashManifest[serviceId] === serviceHash) {
+          console.log(chalk.gray(` - Service ${compassConfig.name} skipped (unchanged)`));
+          skippedCount++;
         } else {
-          console.log(chalk.yellow(` - Service ${compassConfig.name} skipped (already exists)`));
+          const existing = await getService(serviceId);
+
+          if (existing && options.overrideExisting !== false) {
+            await writeService(compassService, { override: true, format });
+            console.log(chalk.cyan(` - Service ${compassConfig.name} updated`));
+          } else if (!existing) {
+            await writeService(compassService, { format });
+            console.log(chalk.cyan(` - Service ${compassConfig.name} created`));
+          } else {
+            console.log(chalk.yellow(` - Service ${compassConfig.name} skipped (already exists)`));
+          }
         }
       }
 
@@ -282,9 +323,17 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
     }
   }
 
+  // Save hash manifest for incremental mode
+  if (incremental && !dryRun && Object.keys(newHashManifest).length > 0) {
+    await saveHashManifest(projectDir, newHashManifest);
+  }
+
   // Summary
   console.log(chalk.green(`\nFinished generating event catalog for the Compass files provided!`));
   console.log(chalk.green(`  Succeeded: ${successCount}, Failed: ${failureCount}`));
+  if (skippedCount > 0) {
+    console.log(chalk.gray(`  Skipped (unchanged): ${skippedCount}`));
+  }
   if (failures.length > 0) {
     console.log(chalk.red('  Failures:'));
     for (const f of failures) {

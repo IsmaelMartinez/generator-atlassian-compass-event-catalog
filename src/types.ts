@@ -47,6 +47,7 @@ export type GeneratorProps = {
   dryRun?: boolean;
   defaultVersion?: string;
   badges?: boolean;
+  incremental?: boolean;
 };
 
 export type DomainOption = {

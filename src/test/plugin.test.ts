@@ -1453,4 +1453,99 @@ describe('Atlassian Compass generator tests', () => {
       logSpy.mockRestore();
     });
   });
+
+  describe('incremental mode', () => {
+    it('writes services on first run and creates hash manifest', async () => {
+      const { getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        incremental: true,
+      });
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+
+      // Hash manifest should exist
+      const manifest = JSON.parse(await fs.readFile(join(catalogDir, '.compass-hashes.json'), 'utf-8'));
+      expect(manifest['my-service']).toBeDefined();
+      expect(typeof manifest['my-service']).toBe('string');
+    });
+
+    it('skips unchanged services on second run', async () => {
+      const logSpy = vi.spyOn(console, 'log');
+
+      // First run: creates service and manifest
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        incremental: true,
+      });
+
+      logSpy.mockClear();
+
+      // Second run: same input, should skip
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        incremental: true,
+      });
+
+      const calls = logSpy.mock.calls.map((c) => c.join(' '));
+      expect(calls.some((c) => c.includes('skipped') && c.includes('unchanged'))).toBe(true);
+
+      logSpy.mockRestore();
+    });
+
+    it('rewrites services when incremental is not set', async () => {
+      const logSpy = vi.spyOn(console, 'log');
+
+      // First run with incremental to create manifest
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        incremental: true,
+      });
+
+      logSpy.mockClear();
+
+      // Second run without incremental: should write normally, not skip
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+      });
+
+      const calls = logSpy.mock.calls.map((c) => c.join(' '));
+      expect(calls.some((c) => c.includes('updated'))).toBe(true);
+      expect(calls.some((c) => c.includes('unchanged'))).toBe(false);
+
+      logSpy.mockRestore();
+    });
+
+    it('reports skipped count in summary', async () => {
+      const logSpy = vi.spyOn(console, 'log');
+
+      // First run
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        incremental: true,
+      });
+
+      logSpy.mockClear();
+
+      // Second run: should report skipped count
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        incremental: true,
+      });
+
+      const calls = logSpy.mock.calls.map((c) => c.join(' '));
+      expect(calls.some((c) => c.includes('Skipped (unchanged): 1'))).toBe(true);
+
+      logSpy.mockRestore();
+    });
+  });
 });
