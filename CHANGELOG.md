@@ -1,5 +1,11 @@
 # @ismaelmartinez/generator-atlassian-compass-event-catalog
 
+## 0.4.0
+
+### Minor Changes
+
+- cf75f82: Enrich team entities with description, avatar, and members from the Compass Teams v2 API. Add incremental mode (`incremental: true`) that skips unchanged services using SHA-256 content hashing.
+
 ## 0.3.0
 
 ### Minor Changes
