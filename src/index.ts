@@ -6,7 +6,7 @@ import Domain from './domain';
 import { GeneratorProps, ResolvedDependency, ServiceIdStrategy } from './types';
 export type { StructuredLink } from './types';
 import { GeneratorPropsSchema } from './validation';
-import { fetchComponents, fetchTeamById } from './compass-api';
+import { fetchComponents, fetchTeamById, TeamData } from './compass-api';
 import { sanitizeId, sanitizeHtml } from './sanitize';
 
 // Resolve service ID based on strategy
@@ -192,28 +192,47 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
         if (rawTeamId) {
           const teamId = sanitizeId(rawTeamId);
           if (!teamsWritten.has(teamId)) {
-            // In API mode, try to fetch team display name from Compass
-            let teamName: string | null = null;
+            // In API mode, try to fetch enriched team data from Compass
+            let teamData: TeamData | null = null;
             if (options.api && !dryRun) {
               try {
-                const teamData = await fetchTeamById(options.api, rawTeamId);
-                if (teamData?.displayName) {
-                  teamName = sanitizeHtml(teamData.displayName);
-                } else {
+                teamData = await fetchTeamById(options.api, rawTeamId);
+                if (!teamData?.displayName) {
                   console.warn(chalk.yellow(` - Could not resolve team name for ${rawTeamId}, skipping team creation`));
+                  teamData = null;
                 }
               } catch {
                 console.warn(chalk.yellow(` - Failed to fetch team name for ${rawTeamId}`));
               }
             } else if (!options.api) {
               // YAML mode: use the UUID as name (no API to resolve)
-              teamName = teamId;
+              teamData = { id: rawTeamId, displayName: teamId };
             }
-            if (teamName && !dryRun) {
-              await writeTeam({ id: teamId, name: teamName, markdown: '' }, { override: true });
+            if (teamData && !dryRun) {
+              const teamName = sanitizeHtml(teamData.displayName);
+              const members = teamData.members?.length
+                ? teamData.members.map((m) => ({
+                    id: m.accountId,
+                    name: sanitizeHtml(m.name),
+                    avatarUrl: m.picture || '',
+                    markdown: '',
+                  }))
+                : undefined;
+
+              await writeTeam(
+                {
+                  id: teamId,
+                  name: teamName,
+                  markdown: '',
+                  ...(teamData.description && { summary: sanitizeHtml(teamData.description) }),
+                  ...(teamData.largeAvatarImageUrl && { avatarUrl: teamData.largeAvatarImageUrl }),
+                  ...(members && { members }),
+                },
+                { override: true }
+              );
               console.log(chalk.cyan(` - Team ${teamId} (${teamName}) created`));
-            } else if (teamName && dryRun) {
-              console.log(chalk.yellow(` - [DRY RUN] Would create team ${teamId} (${teamName})`));
+            } else if (teamData && dryRun) {
+              console.log(chalk.yellow(` - [DRY RUN] Would create team ${teamId} (${sanitizeHtml(teamData.displayName)})`));
             }
             teamsWritten.add(teamId);
           }

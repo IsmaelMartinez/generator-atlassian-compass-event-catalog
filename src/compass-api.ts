@@ -260,17 +260,43 @@ function mapComponent(component: GraphQLComponent, scorecardNames?: Map<string, 
   return config;
 }
 
-// GraphQL query to fetch a team's display name — uses Teams v2 API
+// Enriched team data returned by fetchTeamById
+export type TeamData = {
+  id: string;
+  displayName: string;
+  description?: string;
+  largeAvatarImageUrl?: string;
+  members?: Array<{ accountId: string; name: string; picture?: string }>;
+};
+
+// GraphQL query to fetch enriched team data — uses Teams v2 API
 const GET_TEAM_QUERY = `
   query getTeam($teamId: ID!, $siteId: String!) {
     team {
       teamV2(id: $teamId, siteId: $siteId) {
         id
         displayName
+        description
+        largeAvatarImageUrl
+        members(first: 50) {
+          nodes {
+            member {
+              accountId
+              name
+              picture
+            }
+          }
+        }
       }
     }
   }
 `;
+
+type GetTeamMember = {
+  accountId: string;
+  name: string;
+  picture?: string;
+};
 
 type GetTeamResponse = {
   data?: {
@@ -278,6 +304,11 @@ type GetTeamResponse = {
       teamV2: {
         id: string;
         displayName: string;
+        description?: string;
+        largeAvatarImageUrl?: string;
+        members?: {
+          nodes?: Array<{ member: GetTeamMember }>;
+        };
       } | null;
     };
   };
@@ -287,7 +318,7 @@ type GetTeamResponse = {
 export async function fetchTeamById(
   config: Pick<ApiConfig, 'apiToken' | 'email' | 'baseUrl' | 'cloudId'>,
   teamId: string
-): Promise<{ id: string; displayName: string } | null> {
+): Promise<TeamData | null> {
   const resolvedToken = resolveValue(config.apiToken);
   const resolvedEmail = resolveValue(config.email);
   const endpoint = `${config.baseUrl.replace(/\/$/, '')}/gateway/api/graphql`;
@@ -334,7 +365,21 @@ export async function fetchTeamById(
     return null;
   }
 
-  return { id: team.id, displayName: team.displayName };
+  const members = team.members?.nodes?.length
+    ? team.members.nodes.map((n) => ({
+        accountId: n.member.accountId,
+        name: n.member.name,
+        picture: n.member.picture || undefined,
+      }))
+    : undefined;
+
+  return {
+    id: team.id,
+    displayName: team.displayName,
+    ...(team.description && { description: team.description }),
+    ...(team.largeAvatarImageUrl && { largeAvatarImageUrl: team.largeAvatarImageUrl }),
+    ...(members && { members }),
+  };
 }
 
 // GraphQL query to fetch all scorecards for the cloud instance

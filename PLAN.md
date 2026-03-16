@@ -34,13 +34,13 @@ Added `updateComponentOwner` GraphQL mutation and 3 tests directly to `compass-a
 
 ## Features
 
-### 8. Team enrichment in service markdown
+### 8. Team enrichment in service markdown — done
 
-The generator fetches team display names via `fetchTeamById()`, but the team data could be richer: team members, team lead, contact channels. Compass exposes this through the Teams API. Richer team data would make EventCatalog service pages more actionable for on-call and ownership discovery.
+Expanded `fetchTeamById()` to fetch description, avatar, and members from Compass Teams v2 API. Enriched data is now passed to the SDK's `writeTeam()`: team summary (from description), avatarUrl (from largeAvatarImageUrl), and members array (with accountId, name, picture).
 
-### 9. Event discovery from AsyncAPI/OpenAPI specs
+### ~~9. Event discovery from AsyncAPI/OpenAPI specs~~ — out of scope
 
-The generator produces services and domains, but EventCatalog's core concept is events. If Compass components reference AsyncAPI specs in their links, the generator could parse those specs and auto-create event entries linked to producing/consuming services. This would be the highest-value feature addition.
+Handled separately outside this generator.
 
 ### 10. Incremental/diff mode
 
@@ -50,9 +50,9 @@ The generator rewrites everything on each run. For large catalogs (100+ componen
 
 Wired `DEPENDS_ON` relationships into the SDK's `sends` property so `<NodeGraph />` renders the dependency graph. Scorecards hidden from badge output (too noisy for static catalog content).
 
-### 12. Multi-site support
+### ~~12. Multi-site support~~ — out of scope
 
-The current `ApiConfig` targets a single Atlassian site. Organisations with multiple Compass instances could benefit from aggregating into a single EventCatalog. Supporting an array of API configs would enable that.
+Not applicable to Compass's architecture.
 
 ## Presentation Layer Improvements (done)
 

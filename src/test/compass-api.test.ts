@@ -54,7 +54,15 @@ function makeComponent(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function makeTeamResponse(team: { id: string; displayName: string } | null) {
+function makeTeamResponse(
+  team: {
+    id: string;
+    displayName: string;
+    description?: string;
+    largeAvatarImageUrl?: string;
+    members?: { nodes: Array<{ member: { accountId: string; name: string; picture?: string } }> };
+  } | null
+) {
   return {
     ok: true,
     json: async () => ({
@@ -373,6 +381,45 @@ describe('Compass API client', () => {
       expect(team).toEqual({ id: 'team-uuid-123', displayName: 'Platform Team' });
     });
 
+    it('returns enriched data when available', async () => {
+      mockFetch.mockResolvedValueOnce(
+        makeTeamResponse({
+          id: 'team-uuid-123',
+          displayName: 'Platform Team',
+          description: 'Owns platform services',
+          largeAvatarImageUrl: 'https://avatar.example.com/team.png',
+          members: {
+            nodes: [
+              { member: { accountId: 'user-1', name: 'Alice', picture: 'https://avatar.example.com/alice.png' } },
+              { member: { accountId: 'user-2', name: 'Bob' } },
+            ],
+          },
+        })
+      );
+
+      const team = await fetchTeamById(apiConfig, 'team-uuid-123');
+      expect(team).toEqual({
+        id: 'team-uuid-123',
+        displayName: 'Platform Team',
+        description: 'Owns platform services',
+        largeAvatarImageUrl: 'https://avatar.example.com/team.png',
+        members: [
+          { accountId: 'user-1', name: 'Alice', picture: 'https://avatar.example.com/alice.png' },
+          { accountId: 'user-2', name: 'Bob', picture: undefined },
+        ],
+      });
+    });
+
+    it('omits optional fields when not present', async () => {
+      mockFetch.mockResolvedValueOnce(makeTeamResponse({ id: 'team-uuid-123', displayName: 'Minimal Team' }));
+
+      const team = await fetchTeamById(apiConfig, 'team-uuid-123');
+      expect(team).toEqual({ id: 'team-uuid-123', displayName: 'Minimal Team' });
+      expect(team?.description).toBeUndefined();
+      expect(team?.largeAvatarImageUrl).toBeUndefined();
+      expect(team?.members).toBeUndefined();
+    });
+
     it('returns null when team is not found', async () => {
       mockFetch.mockResolvedValueOnce(makeTeamResponse(null));
 
@@ -524,6 +571,58 @@ describe('Compass API client', () => {
       const team = await getTeam('team-uuid-456');
       expect(team).toBeDefined();
       expect(team.name).toBe('Engineering Squad');
+    });
+
+    it('writes team with enriched data (summary, avatar, members)', async () => {
+      // First call: fetchComponents
+      mockFetch.mockResolvedValueOnce(
+        makeSearchResponse([
+          makeComponent({
+            name: 'enriched-team-service',
+            ownerId: 'ari:cloud:teams:test:team/team-enriched-456',
+          }),
+        ])
+      );
+      // Second call: fetchTeamById with full data
+      mockFetch.mockResolvedValueOnce(
+        makeTeamResponse({
+          id: 'team-enriched-456',
+          displayName: 'Platform Squad',
+          description: 'Owns core platform services',
+          largeAvatarImageUrl: 'https://avatar.example.com/platform.png',
+          members: {
+            nodes: [
+              { member: { accountId: 'user-alice', name: 'Alice Smith', picture: 'https://avatar.example.com/alice.png' } },
+              { member: { accountId: 'user-bob', name: 'Bob Jones' } },
+            ],
+          },
+        })
+      );
+
+      await plugin(eventCatalogConfig, {
+        api: apiConfig,
+        compassUrl: 'https://test.atlassian.net/compass',
+      });
+
+      const { getTeam } = utils(catalogDir);
+      const team = await getTeam('team-enriched-456');
+      expect(team).toBeDefined();
+      expect(team.name).toBe('Platform Squad');
+      expect(team.summary).toBe('Owns core platform services');
+      expect(team.avatarUrl).toBe('https://avatar.example.com/platform.png');
+      expect(team.members).toHaveLength(2);
+      expect(team.members?.[0]).toEqual({
+        id: 'user-alice',
+        name: 'Alice Smith',
+        avatarUrl: 'https://avatar.example.com/alice.png',
+        markdown: '',
+      });
+      expect(team.members?.[1]).toEqual({
+        id: 'user-bob',
+        name: 'Bob Jones',
+        avatarUrl: '',
+        markdown: '',
+      });
     });
 
     it('skips team creation when team fetch fails in API mode', async () => {
