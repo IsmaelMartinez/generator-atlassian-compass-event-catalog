@@ -20,7 +20,11 @@ async function loadHashManifest(projectDir: string): Promise<HashManifest> {
   try {
     const raw = await readFile(join(projectDir, HASH_MANIFEST_FILE), 'utf-8');
     return JSON.parse(raw) as HashManifest;
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(chalk.yellow(`Could not load hash manifest: ${message}. Regenerating all services.`));
+    }
     return {};
   }
 }
