@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@eventcatalog/sdk':
         specifier: ^2.12.0
-        version: 2.17.4
+        version: 2.18.2
       chalk:
         specifier: ^5.6.2
         version: 5.6.2
@@ -350,8 +350,8 @@ packages:
     resolution: {integrity: sha512-iH1B076HoAshH1mLpHMgwdGeTs0CYwL0SPMkGuSebZrwBp16v415e9NZXg2jtrqPVQjf6IANe2Vtlr5KswtcZQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@eventcatalog/sdk@2.17.4':
-    resolution: {integrity: sha512-U8VpdzlgKcO8IJ8T2Ap5uUOjV2lh5AWSccBr3xNms1cQeu2JKVjTq7BM4dv0ctHcnB6fj3uYeU3u3fHc5BaSuQ==}
+  '@eventcatalog/sdk@2.18.2':
+    resolution: {integrity: sha512-668pBoy5xgTS3WCMp9PIjXEimONtkf9suvw/cB7x5k/JnGA2sd1OZViIdKycABnXmrHgJ0t961cS0MTkaah6Ww==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1954,7 +1954,7 @@ snapshots:
       '@eslint/core': 1.1.1
       levn: 0.4.1
 
-  '@eventcatalog/sdk@2.17.4':
+  '@eventcatalog/sdk@2.18.2':
     dependencies:
       fs-extra: 11.3.4
       glob: 13.0.6
