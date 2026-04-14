@@ -105,13 +105,17 @@ Links with names containing "openapi" or "swagger" are attached as OpenAPI speci
 
 ### Custom markdown templates
 
-Provide a `markdownTemplate` function to fully control the markdown content generated for each service. The function receives the `CompassConfig` and resolved dependencies array:
+Provide a `markdownTemplate` function to fully control the markdown content generated for each service. The function receives the `CompassConfig`, resolved dependencies, and structured links extracted from the Compass config (URL, title, category, icon, raw type):
 
 ```js
-markdownTemplate: (config, dependencies) => {
-  return `# ${config.name}\n\nDeps: ${dependencies.map(d => d.name).join(', ')}`;
+markdownTemplate: (config, dependencies, links) => {
+  const deps = dependencies.map((d) => d.name).join(', ') || 'none';
+  const repo = links?.find((l) => l.rawType === 'REPOSITORY')?.url ?? '';
+  return `# ${config.name}\n\nDeps: ${deps}\n\nRepo: ${repo}`;
 },
 ```
+
+The `links` parameter is optional, so existing two-argument templates still work. Import the `StructuredLink` type from the package root if you want type hints.
 
 ### Service ID strategies
 
@@ -141,7 +145,7 @@ When a `domain` option is provided, all generated services are associated with t
 
 ## Security
 
-All user-controlled text is sanitized before embedding in markdown/MDX output. `sanitizeMarkdownText` escapes HTML special characters and markdown link syntax. `sanitizeUrl` only allows `http:` and `https:` protocols, preventing `javascript:` and `data:` URI injection. Service IDs are sanitized to prevent path traversal. In API mode, the `baseUrl` is validated to require HTTPS, and debug logging redacts API tokens and email addresses.
+All user-controlled text is sanitized before embedding in markdown/MDX output. `sanitizeMarkdownText` escapes HTML special characters and markdown link syntax, and `sanitizeUrl` only allows `http:` and `https:` protocols (preventing `javascript:` and `data:` URI injection). Local spec file paths referenced by OpenAPI/AsyncAPI links are passed through `sanitizeLocalPath`, which rejects absolute paths and `../` traversal sequences. Shared helpers in `sanitize.ts` (`sanitizeHtml`, `sanitizeId`) are used for service/team IDs and for custom field text values returned by the Compass API. In API mode, the `baseUrl` is validated to require HTTPS, and debug logging redacts API tokens and email addresses.
 
 ## Found a problem?
 
