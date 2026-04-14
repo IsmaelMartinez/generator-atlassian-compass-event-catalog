@@ -7,5 +7,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   dts: true,
-  entry: ['src/*', '!src/test/*', '!src/docs.ts'],
+  entry: ['src/*', '!src/test/*'],
 });

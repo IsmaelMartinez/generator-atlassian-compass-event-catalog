@@ -60,23 +60,24 @@ API mode credentials support `$ENV_VAR` syntax, so you can reference environment
 
 ### All options
 
-| Option              | Type                                 | Default    | Description                                                           |
-| ------------------- | ------------------------------------ | ---------- | --------------------------------------------------------------------- |
-| `services`          | `ServiceOptions[]`                   | -          | YAML mode: array of local compass file paths                          |
-| `api`               | `ApiConfig`                          | -          | API mode: Compass GraphQL API connection config                       |
-| `compassUrl`        | `string`                             | (required) | Base URL for Compass component links                                  |
-| `domain`            | `{ id, name, version }`              | -          | Associate all services with a domain (created if it doesn't exist)    |
-| `typeFilter`        | `string[]`                           | -          | Only process components matching these type IDs                       |
-| `nameFilter`        | `string[]`                           | -          | Only process components whose name matches one of these strings       |
-| `nameMapping`       | `Record<string, string>`             | -          | Map Compass component names to custom service IDs                     |
-| `overrideExisting`  | `boolean`                            | `true`     | Whether to update existing services or skip them                      |
-| `debug`             | `boolean`                            | `false`    | Enable debug logging (credentials are redacted)                       |
-| `format`            | `'md' \| 'mdx'`                      | `'mdx'`    | Output file format                                                    |
-| `serviceIdStrategy` | `'name' \| 'compass-id' \| Function` | `'name'`   | How service IDs are derived                                           |
-| `markdownTemplate`  | `Function`                           | -          | Custom function to generate service markdown content                  |
-| `dryRun`            | `boolean`                            | `false`    | Log what would happen without writing any changes                     |
-| `defaultVersion`    | `string`                             | `'0.0.0'`  | Default version for services that don't specify one                   |
-| `badges`            | `boolean`                            | `true`     | Generate badges from Compass metadata (type, lifecycle, tier, labels) |
+| Option              | Type                                 | Default    | Description                                                            |
+| ------------------- | ------------------------------------ | ---------- | ---------------------------------------------------------------------- |
+| `services`          | `ServiceOptions[]`                   | -          | YAML mode: array of local compass file paths                           |
+| `api`               | `ApiConfig`                          | -          | API mode: Compass GraphQL API connection config                        |
+| `compassUrl`        | `string`                             | (required) | Base URL for Compass component links                                   |
+| `domain`            | `{ id, name, version }`              | -          | Associate all services with a domain (created if it doesn't exist)     |
+| `typeFilter`        | `string[]`                           | -          | Only process components matching these type IDs                        |
+| `nameFilter`        | `string[]`                           | -          | Only process components whose name matches one of these strings        |
+| `nameMapping`       | `Record<string, string>`             | -          | Map Compass component names to custom service IDs                      |
+| `overrideExisting`  | `boolean`                            | `true`     | Whether to update existing services or skip them                       |
+| `debug`             | `boolean`                            | `false`    | Enable debug logging (credentials are redacted)                        |
+| `format`            | `'md' \| 'mdx'`                      | `'mdx'`    | Output file format                                                     |
+| `serviceIdStrategy` | `'name' \| 'compass-id' \| Function` | `'name'`   | How service IDs are derived                                            |
+| `markdownTemplate`  | `Function`                           | -          | Custom function to generate service markdown content                   |
+| `dryRun`            | `boolean`                            | `false`    | Log what would happen without writing any changes                      |
+| `defaultVersion`    | `string`                             | `'0.0.0'`  | Default version for services that don't specify one                    |
+| `badges`            | `boolean`                            | `true`     | Generate badges from Compass metadata (type, lifecycle, tier, labels)  |
+| `incremental`       | `boolean`                            | `false`    | Skip writing services unchanged since the previous run (hash manifest) |
 
 See the [example configuration](examples/eventcatalog.config.js) for a complete working setup.
 
@@ -104,13 +105,17 @@ Links with names containing "openapi" or "swagger" are attached as OpenAPI speci
 
 ### Custom markdown templates
 
-Provide a `markdownTemplate` function to fully control the markdown content generated for each service. The function receives the `CompassConfig` and resolved dependencies array:
+Provide a `markdownTemplate` function to fully control the markdown content generated for each service. The function receives the `CompassConfig`, resolved dependencies, and structured links extracted from the Compass config (URL, title, category, icon, raw type):
 
 ```js
-markdownTemplate: (config, dependencies) => {
-  return `# ${config.name}\n\nDeps: ${dependencies.map(d => d.name).join(', ')}`;
+markdownTemplate: (config, dependencies, links) => {
+  const deps = dependencies.map((d) => d.name).join(', ') || 'none';
+  const repo = links?.find((l) => l.rawType === 'REPOSITORY')?.url ?? '';
+  return `# ${config.name}\n\nDeps: ${deps}\n\nRepo: ${repo}`;
 },
 ```
+
+The `links` parameter is optional, so existing two-argument templates still work. Import the `StructuredLink` type from the package root if you want type hints.
 
 ### Service ID strategies
 
@@ -126,6 +131,10 @@ File-level `id` overrides in YAML mode always take precedence over the strategy.
 
 Set `dryRun: true` to see what the generator would do without writing any files. Services, teams, and domain associations are all logged but not persisted.
 
+### Incremental mode
+
+Set `incremental: true` to skip writing services that haven't changed since the last run. The generator computes a SHA-256 hash of each built service and stores it in `.compass-hashes.json` in the project directory. On subsequent runs, services with a matching hash are skipped and reported in the summary as `Skipped (unchanged)`.
+
 ### Error resilience
 
 The generator continues processing when individual services fail (e.g. malformed YAML, missing files). A summary at the end reports succeeded and failed counts with error details.
@@ -136,7 +145,7 @@ When a `domain` option is provided, all generated services are associated with t
 
 ## Security
 
-All user-controlled text is sanitized before embedding in markdown/MDX output. `sanitizeMarkdownText` escapes HTML special characters and markdown link syntax. `sanitizeUrl` only allows `http:` and `https:` protocols, preventing `javascript:` and `data:` URI injection. Service IDs are sanitized to prevent path traversal. In API mode, the `baseUrl` is validated to require HTTPS, and debug logging redacts API tokens and email addresses.
+All user-controlled text is sanitized before embedding in markdown/MDX output. `sanitizeMarkdownText` escapes HTML special characters and markdown link syntax, and `sanitizeUrl` only allows `http:` and `https:` protocols (preventing `javascript:` and `data:` URI injection). Local spec file paths referenced by OpenAPI/AsyncAPI links are passed through `sanitizeLocalPath`, which rejects absolute paths and `../` traversal sequences. Shared helpers in `sanitize.ts` (`sanitizeHtml`, `sanitizeId`) are used for service/team IDs and for custom field text values returned by the Compass API. In API mode, the `baseUrl` is validated to require HTTPS, and debug logging redacts API tokens and email addresses.
 
 ## Found a problem?
 
