@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-An EventCatalog generator plugin that reads Atlassian Compass YAML files and produces service entries in an EventCatalog. It parses `compass.yml` files, extracts metadata (links, badges, owners, dependencies), and uses the `@eventcatalog/sdk` to write services (and optionally domains) into the catalog's file system.
+An EventCatalog generator plugin that reads Atlassian Compass components and produces service entries in an EventCatalog. It supports two mutually exclusive input modes: **YAML mode** (parses local `compass.yml` files) and **API mode** (fetches components from the Compass GraphQL API). In both modes it extracts metadata (links, badges, owners, dependencies, custom fields, scorecards) and uses the `@eventcatalog/sdk` to write services, teams, and optionally a domain into the catalog's file system.
 
 ## Commands
 
-Package manager is pnpm (v8 in CI). All commands use `pnpm run`.
+Package manager is pnpm (pinned via `packageManager` field). All commands use `pnpm run`.
 
 ```
 pnpm install          # install deps
@@ -25,29 +25,34 @@ CI runs three checks on PRs: Tests, Lint (eslint + prettier), and Verify Build. 
 
 ## Architecture
 
-The plugin exports a single async function from `src/index.ts` that EventCatalog calls with a config object and `GeneratorProps` options. Processing happens in two passes over the services array:
+The plugin exports a single async function from `src/index.ts` that EventCatalog calls with a config object and `GeneratorProps` options. After validating options with the Zod schema, processing happens in two passes:
 
-Pass 1 (`src/index.ts`): Load each compass YAML via `loadConfig` from `src/compass.ts`, apply the optional `typeFilter`, and build a `serviceMap` keyed by Compass ARN so that `DEPENDS_ON` relationships can be resolved between services.
+Pass 1 (`src/index.ts`): Build processable entries. In **API mode** (`options.api`), call `fetchComponents` from `src/compass-api.ts` to page through the Compass GraphQL API. In **YAML mode** (`options.services`), call `loadConfig` from `src/compass.ts` to parse each local file. Apply `typeFilter`, `nameFilter`, and `nameMapping`, and build a `serviceMap` keyed by Compass ARN so that `DEPENDS_ON` relationships can be resolved between services in the same run.
 
-Pass 2 (`src/index.ts`): For each processable file, call `loadService` from `src/service.ts` to build the `Service` object (markdown template with links, dependencies, badges, owners, repository URL), then write it via the EventCatalog SDK. If a `domain` option is provided, `src/domain.ts` handles creating/versioning the domain and associating services to it.
+Pass 2 (`src/index.ts`): For each processable entry, resolve dependencies, optionally fetch enriched team data via `fetchTeamById` (API mode), write the team entity, call `loadService` from `src/service.ts` to build the `Service` object, and write it via the SDK. When `incremental: true`, each built `Service` is SHA-256 hashed and compared against `.compass-hashes.json` in the project directory to skip unchanged services. If a `domain` option is provided, `src/domain.ts` handles creating/versioning the domain and associating services to it. `dryRun: true` logs the intended actions without writing.
 
 Key modules:
 
 - `src/compass.ts` — `CompassConfig` type definition and YAML loading. The type mirrors the Atlassian Compass config-as-code spec.
-- `src/service.ts` — Transforms a `CompassConfig` into an EventCatalog `Service`. Contains markdown template generation, badge building, URL sanitization (XSS prevention), and link formatting.
+- `src/compass-api.ts` — Compass GraphQL client. `fetchComponents` paginates through `searchComponents`, `fetchTeamById` queries the Teams v2 API for enriched team data (description, avatar, members), `fetchScorecardNames` resolves scorecard display names, and `updateComponentOwner` is available as a mutation helper. `resolveValue` expands `$ENV_VAR` references for credentials. All fetches use a 30s `AbortSignal.timeout`.
+- `src/service.ts` — Transforms a `CompassConfig` into an EventCatalog `Service`. Handles the default markdown template (with categorised link subsections, custom fields table, dependencies, and `<NodeGraph />`), badge building, URL sanitization (XSS prevention), attachments from structured links, `styles.icon` based on `typeId`, and OpenAPI/AsyncAPI spec detection from link names.
 - `src/domain.ts` — `Domain` class that manages domain creation, versioning, and service association via the SDK.
-- `src/validation.ts` — Zod schemas for validating `GeneratorProps` at runtime.
-- `src/types.ts` — Shared TypeScript types (`GeneratorProps`, `DomainOption`, `ResolvedDependency`).
+- `src/sanitize.ts` — Shared `sanitizeHtml` (HTML entity escaping) and `sanitizeId` (path-traversal-safe IDs) used across modules.
+- `src/validation.ts` — Zod schemas for validating `GeneratorProps` at runtime. Enforces `services` XOR `api`, HTTPS `baseUrl` in API mode, and required fields.
+- `src/types.ts` — Shared TypeScript types (`GeneratorProps`, `ApiConfig`, `DomainOption`, `ResolvedDependency`, `StructuredLink`, `MarkdownTemplateFn`, `ServiceIdStrategy`).
 
 ## Testing
 
-Single test file at `src/test/plugin.test.ts`. Tests run the full plugin against a temporary catalog directory (`src/test/catalog/`) that gets cleaned up in `afterEach`. Test fixture YAML files live in `src/test/`. The `vitest.setup.ts` adds a custom `toMatchMarkdown` matcher that normalizes whitespace.
+Two test files live in `src/test/`:
 
-The `@eventcatalog/sdk` is inlined during testing (configured in `vitest.config.ts` via `server.deps.inline`).
+- `plugin.test.ts` — end-to-end tests that run the full plugin against a temporary catalog directory (`src/test/catalog/`) cleaned up in `afterEach`. Uses YAML fixtures (`my-*-compass.yml`, `malformed-compass.yml`) from the same directory.
+- `compass-api.test.ts` — unit tests for the GraphQL client that stub `global.fetch` to exercise pagination, error handling, team/scorecard fetching, and the `updateComponentOwner` mutation.
+
+`vitest.setup.ts` adds a custom `toMatchMarkdown` matcher that normalizes whitespace. The `@eventcatalog/sdk` is inlined during testing (configured in `vitest.config.ts` via `server.deps.inline`).
 
 ## Security Considerations
 
-`src/service.ts` sanitizes all user-controlled text before embedding in markdown/MDX: `sanitizeMarkdownText` escapes HTML special characters and markdown link syntax; `sanitizeUrl` only allows `http:`/`https:` protocols. `src/index.ts` sanitizes service IDs via `sanitizeId` to prevent path traversal.
+`src/service.ts` sanitizes all user-controlled text before embedding in markdown/MDX: `sanitizeMarkdownText` escapes HTML special characters and markdown link syntax; `sanitizeUrl` only allows `http:`/`https:` protocols; `sanitizeLocalPath` rejects absolute paths and `../` traversal sequences before attaching OpenAPI/AsyncAPI specs. `src/sanitize.ts` provides the shared `sanitizeHtml` and `sanitizeId` helpers used by `index.ts` (service/team IDs) and `compass-api.ts` (custom field text values). In API mode, `validation.ts` requires the `baseUrl` to use HTTPS, and debug logging in `index.ts` redacts `apiToken` and `email`.
 
 ## Repo Butler
 

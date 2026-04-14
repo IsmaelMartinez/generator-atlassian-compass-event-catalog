@@ -60,23 +60,24 @@ API mode credentials support `$ENV_VAR` syntax, so you can reference environment
 
 ### All options
 
-| Option              | Type                                 | Default    | Description                                                           |
-| ------------------- | ------------------------------------ | ---------- | --------------------------------------------------------------------- |
-| `services`          | `ServiceOptions[]`                   | -          | YAML mode: array of local compass file paths                          |
-| `api`               | `ApiConfig`                          | -          | API mode: Compass GraphQL API connection config                       |
-| `compassUrl`        | `string`                             | (required) | Base URL for Compass component links                                  |
-| `domain`            | `{ id, name, version }`              | -          | Associate all services with a domain (created if it doesn't exist)    |
-| `typeFilter`        | `string[]`                           | -          | Only process components matching these type IDs                       |
-| `nameFilter`        | `string[]`                           | -          | Only process components whose name matches one of these strings       |
-| `nameMapping`       | `Record<string, string>`             | -          | Map Compass component names to custom service IDs                     |
-| `overrideExisting`  | `boolean`                            | `true`     | Whether to update existing services or skip them                      |
-| `debug`             | `boolean`                            | `false`    | Enable debug logging (credentials are redacted)                       |
-| `format`            | `'md' \| 'mdx'`                      | `'mdx'`    | Output file format                                                    |
-| `serviceIdStrategy` | `'name' \| 'compass-id' \| Function` | `'name'`   | How service IDs are derived                                           |
-| `markdownTemplate`  | `Function`                           | -          | Custom function to generate service markdown content                  |
-| `dryRun`            | `boolean`                            | `false`    | Log what would happen without writing any changes                     |
-| `defaultVersion`    | `string`                             | `'0.0.0'`  | Default version for services that don't specify one                   |
-| `badges`            | `boolean`                            | `true`     | Generate badges from Compass metadata (type, lifecycle, tier, labels) |
+| Option              | Type                                 | Default    | Description                                                            |
+| ------------------- | ------------------------------------ | ---------- | ---------------------------------------------------------------------- |
+| `services`          | `ServiceOptions[]`                   | -          | YAML mode: array of local compass file paths                           |
+| `api`               | `ApiConfig`                          | -          | API mode: Compass GraphQL API connection config                        |
+| `compassUrl`        | `string`                             | (required) | Base URL for Compass component links                                   |
+| `domain`            | `{ id, name, version }`              | -          | Associate all services with a domain (created if it doesn't exist)     |
+| `typeFilter`        | `string[]`                           | -          | Only process components matching these type IDs                        |
+| `nameFilter`        | `string[]`                           | -          | Only process components whose name matches one of these strings        |
+| `nameMapping`       | `Record<string, string>`             | -          | Map Compass component names to custom service IDs                      |
+| `overrideExisting`  | `boolean`                            | `true`     | Whether to update existing services or skip them                       |
+| `debug`             | `boolean`                            | `false`    | Enable debug logging (credentials are redacted)                        |
+| `format`            | `'md' \| 'mdx'`                      | `'mdx'`    | Output file format                                                     |
+| `serviceIdStrategy` | `'name' \| 'compass-id' \| Function` | `'name'`   | How service IDs are derived                                            |
+| `markdownTemplate`  | `Function`                           | -          | Custom function to generate service markdown content                   |
+| `dryRun`            | `boolean`                            | `false`    | Log what would happen without writing any changes                      |
+| `defaultVersion`    | `string`                             | `'0.0.0'`  | Default version for services that don't specify one                    |
+| `badges`            | `boolean`                            | `true`     | Generate badges from Compass metadata (type, lifecycle, tier, labels)  |
+| `incremental`       | `boolean`                            | `false`    | Skip writing services unchanged since the previous run (hash manifest) |
 
 See the [example configuration](examples/eventcatalog.config.js) for a complete working setup.
 
@@ -125,6 +126,10 @@ File-level `id` overrides in YAML mode always take precedence over the strategy.
 ### Dry-run mode
 
 Set `dryRun: true` to see what the generator would do without writing any files. Services, teams, and domain associations are all logged but not persisted.
+
+### Incremental mode
+
+Set `incremental: true` to skip writing services that haven't changed since the last run. The generator computes a SHA-256 hash of each built service and stores it in `.compass-hashes.json` in the project directory. On subsequent runs, services with a matching hash are skipped and reported in the summary as `Skipped (unchanged)`.
 
 ### Error resilience
 

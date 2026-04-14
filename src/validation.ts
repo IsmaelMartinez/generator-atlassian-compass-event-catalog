@@ -40,6 +40,8 @@ export const GeneratorPropsSchema = z
     format: z.enum(['md', 'mdx']).optional(),
     serviceIdStrategy: ServiceIdStrategySchema.optional(),
     dryRun: z.boolean().optional(),
+    defaultVersion: z.string().min(1).optional(),
+    badges: z.boolean().optional(),
     incremental: z.boolean().optional(),
   })
   .refine((data) => data.services || data.api, {
