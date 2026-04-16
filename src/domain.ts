@@ -15,14 +15,14 @@ export function resolveDomain(config: CompassConfig, option: DomainOption): Doma
   if (option.from === 'label') {
     if (config.labels) {
       for (const label of config.labels) {
-        if (option.mapping[label]) {
+        if (Object.prototype.hasOwnProperty.call(option.mapping, label)) {
           return option.mapping[label];
         }
       }
     }
   } else if (option.from === 'customField' && option.key) {
     const field = config.customFields?.find((f) => f.name === option.key);
-    if (field && typeof field.value === 'string' && option.mapping[field.value]) {
+    if (field && typeof field.value === 'string' && Object.prototype.hasOwnProperty.call(option.mapping, field.value)) {
       return option.mapping[field.value];
     }
   }
