@@ -16,7 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
       - name: Installation
-        run: pnpm i
+        run: pnpm install
       - name: Build
         run: pnpm run build
