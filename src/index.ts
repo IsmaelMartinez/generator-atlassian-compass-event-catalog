@@ -117,7 +117,16 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   async function getDomainFor(compassConfig: CompassConfig): Promise<Domain | null> {
     if (!options.domain) return null;
     const spec = resolveDomain(compassConfig, options.domain);
-    if (!spec) return null;
+    if (!spec) {
+      if (options.debug) {
+        console.debug(chalk.magenta(` - No domain matched for ${compassConfig.name}, skipping domain association`));
+      }
+      return null;
+    }
+
+    if (options.debug) {
+      console.debug(chalk.magenta(` - Resolved domain for ${compassConfig.name}: ${spec.id} (v${spec.version})`));
+    }
 
     let instance = domainRegistry.get(spec.id);
     if (!instance) {
