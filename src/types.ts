@@ -50,11 +50,20 @@ export type GeneratorProps = {
   incremental?: boolean;
 };
 
-export type DomainOption = {
+export type DomainSpec = {
   id: string;
   name: string;
   version: string;
 };
+
+export type DomainMapping = {
+  from: 'label' | 'customField';
+  key?: string;
+  mapping: Record<string, DomainSpec>;
+  fallback?: DomainSpec | 'skip';
+};
+
+export type DomainOption = DomainSpec | DomainMapping;
 
 export type ResolvedDependency = {
   id: string;

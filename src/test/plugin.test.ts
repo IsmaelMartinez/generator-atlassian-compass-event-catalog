@@ -293,6 +293,116 @@ describe('Atlassian Compass generator tests', () => {
     });
   });
 
+  describe('domain mapping from Compass metadata', () => {
+    it('routes services to different domains based on labels', async () => {
+      const { getDomain } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }, { path: join(__dirname, 'my-application-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        domain: {
+          from: 'label',
+          mapping: {
+            baz: { id: 'backend', name: 'Backend', version: '0.0.1' },
+            frontend: { id: 'frontend', name: 'Frontend', version: '0.0.1' },
+          },
+        },
+      });
+
+      const backend = await getDomain('backend', '0.0.1');
+      expect(backend).toEqual(
+        expect.objectContaining({
+          id: 'backend',
+          name: 'Backend',
+          services: [{ id: 'my-service', version: '0.0.0' }],
+        })
+      );
+
+      const frontend = await getDomain('frontend', '0.0.1');
+      expect(frontend).toEqual(
+        expect.objectContaining({
+          id: 'frontend',
+          name: 'Frontend',
+          services: [{ id: 'my-application', version: '0.0.0' }],
+        })
+      );
+    });
+
+    it('routes a service to a domain based on a custom field value', async () => {
+      const { getDomain } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        domain: {
+          from: 'customField',
+          key: 'platform',
+          mapping: {
+            web: { id: 'web-platform', name: 'Web Platform', version: '0.0.1' },
+          },
+        },
+      });
+
+      const domain = await getDomain('web-platform', '0.0.1');
+      expect(domain).toEqual(
+        expect.objectContaining({
+          id: 'web-platform',
+          services: [{ id: 'my-service', version: '0.0.0' }],
+        })
+      );
+    });
+
+    it('uses fallback domain for unmatched services, skips when fallback is "skip"', async () => {
+      const { getDomain } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        domain: {
+          from: 'label',
+          mapping: {
+            nonexistent: { id: 'never', name: 'Never', version: '0.0.1' },
+          },
+          fallback: { id: 'catch-all', name: 'Catch All', version: '0.0.1' },
+        },
+      });
+
+      const fallback = await getDomain('catch-all', '0.0.1');
+      expect(fallback).toEqual(
+        expect.objectContaining({
+          id: 'catch-all',
+          services: [{ id: 'my-service', version: '0.0.0' }],
+        })
+      );
+
+      // Nothing was routed to the unmatched mapping entry, so it should not exist.
+      const never = await getDomain('never', '0.0.1');
+      expect(never).toBeUndefined();
+    });
+
+    it('skips domain association when fallback is "skip" and no match', async () => {
+      const { getDomain, getService } = utils(catalogDir);
+
+      await plugin(eventCatalogConfig, {
+        services: [{ path: join(__dirname, 'my-service-compass.yml') }],
+        compassUrl: 'https://compass.atlassian.com',
+        domain: {
+          from: 'label',
+          mapping: {
+            nonexistent: { id: 'never', name: 'Never', version: '0.0.1' },
+          },
+          fallback: 'skip',
+        },
+      });
+
+      const never = await getDomain('never', '0.0.1');
+      expect(never).toBeUndefined();
+
+      const service = await getService('my-service');
+      expect(service).toBeDefined();
+    });
+  });
+
   describe('all Compass component types', () => {
     it('processes APPLICATION type components', async () => {
       const { getService } = utils(catalogDir);

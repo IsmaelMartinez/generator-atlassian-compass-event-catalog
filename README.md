@@ -65,7 +65,7 @@ API mode credentials support `$ENV_VAR` syntax, so you can reference environment
 | `services`          | `ServiceOptions[]`                   | -          | YAML mode: array of local compass file paths                           |
 | `api`               | `ApiConfig`                          | -          | API mode: Compass GraphQL API connection config                        |
 | `compassUrl`        | `string`                             | (required) | Base URL for Compass component links                                   |
-| `domain`            | `{ id, name, version }`              | -          | Associate all services with a domain (created if it doesn't exist)     |
+| `domain`            | `DomainSpec \| DomainMapping`        | -          | Associate services with a domain (static, or derived from metadata)    |
 | `typeFilter`        | `string[]`                           | -          | Only process components matching these type IDs                        |
 | `nameFilter`        | `string[]`                           | -          | Only process components whose name matches one of these strings        |
 | `nameMapping`       | `Record<string, string>`             | -          | Map Compass component names to custom service IDs                      |
@@ -141,7 +141,42 @@ The generator continues processing when individual services fail (e.g. malformed
 
 ### Domain support
 
-When a `domain` option is provided, all generated services are associated with that domain. The domain is created automatically if it doesn't exist, and versioned if the version changes between runs.
+When a `domain` option is provided, generated services are associated with a domain. Domains are created automatically when first used, and versioned when their version string changes between runs.
+
+**Static domain** — all services go to the same domain:
+
+```js
+domain: { id: 'payments', name: 'Payments', version: '0.0.1' }
+```
+
+**Derived from a Compass label** — first matching label wins (case-sensitive):
+
+```js
+domain: {
+  from: 'label',
+  mapping: {
+    backend: { id: 'backend', name: 'Backend', version: '0.0.1' },
+    frontend: { id: 'frontend', name: 'Frontend', version: '0.0.1' },
+  },
+  fallback: { id: 'other', name: 'Other', version: '0.0.1' }, // optional; default is 'skip'
+}
+```
+
+**Derived from a custom field value**:
+
+```js
+domain: {
+  from: 'customField',
+  key: 'platform',
+  mapping: {
+    web: { id: 'web-platform', name: 'Web Platform', version: '0.0.1' },
+    mobile: { id: 'mobile-platform', name: 'Mobile Platform', version: '0.0.1' },
+  },
+  fallback: 'skip', // unmatched services get no domain association
+}
+```
+
+Each mapped domain is versioned independently — bumping one domain's `version` in config won't re-version the others.
 
 ## Security
 

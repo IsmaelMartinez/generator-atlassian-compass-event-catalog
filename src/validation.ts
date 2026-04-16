@@ -6,11 +6,24 @@ const ServiceOptionsSchema = z.object({
   version: z.string().optional(),
 });
 
-const DomainOptionSchema = z.object({
+const DomainSpecSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   version: z.string().min(1),
 });
+
+const DomainMappingSchema = z
+  .object({
+    from: z.enum(['label', 'customField']),
+    key: z.string().min(1).optional(),
+    mapping: z.record(z.string().min(1), DomainSpecSchema),
+    fallback: z.union([DomainSpecSchema, z.literal('skip')]).optional(),
+  })
+  .refine((data) => data.from !== 'customField' || !!data.key, {
+    message: '"key" is required when domain.from is "customField"',
+  });
+
+const DomainOptionSchema = z.union([DomainSpecSchema, DomainMappingSchema]);
 
 const ApiConfigSchema = z.object({
   cloudId: z.string().min(1, 'cloudId is required'),

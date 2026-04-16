@@ -1,5 +1,37 @@
 import utils from '@eventcatalog/sdk';
 import chalk from 'chalk';
+import type { CompassConfig } from './compass';
+import type { DomainOption, DomainSpec } from './types';
+
+function isDomainSpec(option: DomainOption): option is DomainSpec {
+  return 'id' in option && 'name' in option && 'version' in option;
+}
+
+export function resolveDomain(config: CompassConfig, option: DomainOption): DomainSpec | null {
+  if (isDomainSpec(option)) {
+    return option;
+  }
+
+  if (option.from === 'label') {
+    if (config.labels) {
+      for (const label of config.labels) {
+        if (option.mapping[label]) {
+          return option.mapping[label];
+        }
+      }
+    }
+  } else if (option.from === 'customField' && option.key) {
+    const field = config.customFields?.find((f) => f.name === option.key);
+    if (field && typeof field.value === 'string' && option.mapping[field.value]) {
+      return option.mapping[field.value];
+    }
+  }
+
+  if (option.fallback && option.fallback !== 'skip') {
+    return option.fallback;
+  }
+  return null;
+}
 
 export default class Domain {
   id: string;
