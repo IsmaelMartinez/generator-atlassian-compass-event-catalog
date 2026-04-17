@@ -5,7 +5,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadConfig, CompassConfig } from './compass';
 import { loadService, extractTeamId } from './service';
-import Domain from './domain';
+import Domain, { resolveDomain } from './domain';
 import { GeneratorProps, ResolvedDependency, ServiceIdStrategy, Service } from './types';
 export type { StructuredLink } from './types';
 import { GeneratorPropsSchema } from './validation';
@@ -111,19 +111,39 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
   const newHashManifest: HashManifest = {};
   let skippedCount = 0;
 
-  let domain = null;
+  const domainRegistry = new Map<string, Domain>();
+  const processedDomainIds = new Set<string>();
 
-  if (options.domain) {
-    domain = new Domain(options.domain.id, options.domain.name, options.domain.version, projectDir);
-    if (dryRun) {
-      console.log(
-        chalk.yellow(
-          `\n[DRY RUN] Would create/update domain: ${options.domain.name} (id: ${options.domain.id}, v${options.domain.version})`
-        )
-      );
-    } else {
-      await domain.processDomain();
+  async function getDomainFor(compassConfig: CompassConfig): Promise<Domain | null> {
+    if (!options.domain) return null;
+    const spec = resolveDomain(compassConfig, options.domain);
+    if (!spec) {
+      if (options.debug) {
+        console.debug(chalk.magenta(` - No domain matched for ${compassConfig.name}, skipping domain association`));
+      }
+      return null;
     }
+
+    if (options.debug) {
+      console.debug(chalk.magenta(` - Resolved domain for ${compassConfig.name}: ${spec.id} (v${spec.version})`));
+    }
+
+    let instance = domainRegistry.get(spec.id);
+    if (!instance) {
+      instance = new Domain(spec.id, spec.name, spec.version, projectDir);
+      domainRegistry.set(spec.id, instance);
+    }
+
+    if (!processedDomainIds.has(spec.id)) {
+      processedDomainIds.add(spec.id);
+      if (dryRun) {
+        console.log(chalk.yellow(`\n[DRY RUN] Would create/update domain: ${spec.name} (id: ${spec.id}, v${spec.version})`));
+      } else {
+        await instance.processDomain();
+      }
+    }
+
+    return instance;
   }
 
   // First pass: build processable entries from either API or YAML mode
@@ -208,6 +228,7 @@ export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
     try {
       console.log(chalk.blue(`\nProcessing component: ${compassConfig.name} (type: ${compassConfig.typeId || 'unknown'})`));
 
+      const domain = await getDomainFor(compassConfig);
       if (domain && !dryRun) {
         // Add the service to the domain
         await domain.addServiceToDomain(serviceId, version);
