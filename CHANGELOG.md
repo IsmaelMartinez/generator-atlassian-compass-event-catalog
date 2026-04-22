@@ -1,5 +1,11 @@
 # @ismaelmartinez/generator-atlassian-compass-event-catalog
 
+## Unreleased
+
+### Deprecated
+
+- This package is now deprecated. Atlassian has announced that Compass is being sunset (end-of-sale 2026-05-13, renewals end 2026-12-31, support ends December 2027) and customers are being migrated to DX. Since this generator has no known production users, development is being wound down ahead of Atlassian's timeline. A runtime warning is now emitted whenever the generator runs. See the README for details.
+
 ## 0.5.0
 
 ### Minor Changes
