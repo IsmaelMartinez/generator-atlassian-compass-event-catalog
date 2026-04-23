@@ -66,6 +66,14 @@ type ProcessableEntry = {
 };
 
 export default async (_config: EventCatalogConfig, options: GeneratorProps) => {
+  console.warn(
+    chalk.yellow(
+      '[generator-atlassian-compass-event-catalog] DEPRECATED: Atlassian Compass is being sunset ' +
+        '(end-of-sale 2026-05-13, end-of-support 2027-12). This generator is no longer maintained. ' +
+        'See https://www.atlassian.com/blog/announcements/the-next-chapter-for-compass'
+    )
+  );
+
   // Validate configuration
   GeneratorPropsSchema.parse(options);
 

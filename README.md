@@ -1,5 +1,12 @@
 # Atlassian Compass EventCatalog Generator
 
+> [!WARNING]
+> **This project is deprecated and will not receive further updates.**
+>
+> Atlassian has [announced the end of Compass](https://www.atlassian.com/blog/announcements/the-next-chapter-for-compass). Compass reaches **end-of-sale on May 13, 2026**, renewals end **December 31, 2026**, and product support concludes in **December 2027**. Atlassian is directing customers to migrate to [DX](https://www.getdx.com/).
+>
+> Since this generator has no known production users, development is being wound down ahead of Atlassian's timeline. The package will remain published for existing installs, but no new features or non-critical fixes will be shipped. If you depend on this plugin, please pin the current version and plan a migration away from Compass.
+
 An [EventCatalog](https://eventcatalog.dev/) generator plugin that creates services from [Atlassian Compass](https://developer.atlassian.com/cloud/compass/config-as-code/structure-and-contents-of-a-compass-yml-file/) components. It supports two modes: reading local `compass.yml` files (YAML mode) or fetching components directly from the Compass GraphQL API (API mode).
 
 ## Installation
