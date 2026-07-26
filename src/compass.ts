@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { load } from 'js-yaml';
 import fs from 'fs';
 
 //Object generated from the compass.yml file
@@ -83,7 +83,7 @@ export type CompassConfig = {
 };
 
 export function loadConfig(path: string): CompassConfig {
-  const raw = yaml.load(fs.readFileSync(path, 'utf8'));
+  const raw = load(fs.readFileSync(path, 'utf8'));
   if (!raw || typeof raw !== 'object' || !('name' in raw) || typeof (raw as Record<string, unknown>).name !== 'string') {
     throw new Error(`Invalid Compass config in ${path}: missing required "name" field`);
   }
