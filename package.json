@@ -1,7 +1,7 @@
 {
   "name": "@ismaelmartinez/generator-atlassian-compass-event-catalog",
   "version": "0.5.0",
-  "description": "Atlassian Compass generator for Event Catalog",
+  "description": "DEPRECATED: unmaintained since 2026-11-06 (Atlassian Compass is being sunset). Atlassian Compass generator for Event Catalog",
   "scripts": {
     "build": "tsup",
     "test": "vitest",
